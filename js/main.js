@@ -182,16 +182,13 @@ function initMusicPlayer() {
         headerRight.insertBefore(btn, headerRight.firstChild);
     }
 
-    let audio = null;
+    const audio = new Audio();
+    audio.src = MUSIC_URL;
+    audio.loop = true;
+    audio.volume = 0.3;
 
     const togglePlay = async (e) => {
         if(e) e.preventDefault();
-        
-        if(!audio) {
-            audio = new Audio(MUSIC_URL);
-            audio.loop = true;
-            audio.volume = 0.3;
-        }
         
         if(audio.paused) {
             try {
@@ -204,7 +201,6 @@ function initMusicPlayer() {
             } catch (err) {
                 console.error("Audio play error:", err);
                 btn.classList.remove('animate-pulse');
-                alert('ошибка воспроизведения: ' + err.message);
             }
         } else {
             audio.pause();
@@ -217,7 +213,7 @@ function initMusicPlayer() {
     btn.onclick = togglePlay;
 
     setInterval(() => {
-        if(!audio || audio.paused) {
+        if(audio.paused) {
             btn.classList.add('music-beckon');
             setTimeout(() => {
                 btn.classList.remove('music-beckon');
