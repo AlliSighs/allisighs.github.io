@@ -1,46 +1,18 @@
-﻿(function() {
-    // 1. Иконка (Умный поиск пути)
+════════════════════════════════════════
+ФАЙЛ: C:\Users\AlliSighs\Desktop\AlliSighs Tools\altoolsupd\js\main.js
+════════════════════════════════════════
+
+(function() {
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
         link = document.createElement('link');
         link.rel = 'icon';
         document.head.appendChild(link);
     }
-    
-    // Определяем, насколько глубоко мы находимся
-    // Считаем количество слешей в пути после домена
-    const depth = window.location.pathname.split('/').length - 2; 
-    // -2 потому что первый слеш пустой, и последний файл не в счет
-    
-    let prefix = '';
-    // Если мы на главной (корень), prefix пустой. 
-    // Если в папках - добавляем ../
-    // (Логика упрощенная: если мы не в корне, пробуем подняться)
-    if (window.location.pathname.includes('/pages/')) {
-        // Если мы в pages/portfolio/index.html -> нам нужно ../../
-        // Если мы в pages/discord/cloner/index.html -> нам нужно ../../../
-        
-        // Простой хак: считаем сегменты пути
-        const pathSegments = window.location.pathname.split('/').filter(p => p.length > 0 && !p.includes('.html'));
-        // pathSegments для cloner будет: ['repo_name', 'pages', 'discord', 'cloner']
-        
-        // Для GitHub Pages обычно repo_name - это первая папка.
-        // Давай сделаем проще: будем искать assets относительно текущей папки
-        
-        if (document.querySelector('link[href*="css/style.css"]')) {
-             // Берем префикс из уже рабочей ссылки на CSS (мы же их руками поправили)
-             const cssPath = document.querySelector('link[href*="css/style.css"]').getAttribute('href');
-             prefix = cssPath.replace('css/style.css', '');
-        } else {
-             prefix = '../../'; // Фоллбек
-        }
-    }
-    
+    const prefix = window.location.pathname.includes('/pages/') ? '../../' : '';
     link.href = prefix + 'assets/siteicon.png';
 
-    // 2. Инициализация языка
     function initLanguageSwitcher() {
-        // Подключаем Google Translate
         if (!document.getElementById('google-script')) {
             const s = document.createElement('script');
             s.id = 'google-script';
@@ -62,12 +34,23 @@
             }, 'google_translate_element');
         };
 
+        const observer = new MutationObserver((mutations) => {
+            const badFrames = document.querySelectorAll('.skiptranslate, iframe[id*=":1.container"]');
+            if (badFrames.length > 0) {
+                badFrames.forEach(el => el.remove());
+                document.body.style.top = "0px";
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
         const isEn = document.cookie.includes('googtrans=/ru/en');
 
-        // Создаем контейнер кнопок
         function createLangButtons() {
             const container = document.createElement('div');
             container.className = 'lang-switcher-container';
+            container.style.marginRight = '12px';
+            container.style.marginLeft = '12px';
+            container.style.zIndex = '100';
             
             container.innerHTML = `
                 <button class="lang-btn ${!isEn ? 'active' : ''}" id="btn-ru">RU</button>
@@ -75,7 +58,7 @@
             `;
 
             container.querySelector('#btn-ru').onclick = (e) => {
-                e.preventDefault(); // Предотвращаем переход по ссылке, если кнопка внутри ссылки
+                e.preventDefault();
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname;
                 localStorage.removeItem('as_geo_checked');
@@ -92,36 +75,22 @@
             return container;
         }
 
-        // --- ВСТАВКА КНОПОК ---
-        
-        // 1. Экран авторизации
         const authScreen = document.getElementById('auth-screen');
         if (authScreen && !authScreen.querySelector('.lang-switcher-container')) {
             const btns = createLangButtons();
             authScreen.appendChild(btns);
         }
 
-        // 2. Хедер (Главная и Тулзы)
-        // Ищем правый блок (где музыка и выход)
-        let toolsHeaderRight = document.querySelector('header .flex.items-center.gap-3:last-child');
-        
-        // 3. Хедер (Портфолио - там структура другая, нет gap-3 справа)
-        if (!toolsHeaderRight) {
-             // Ищем просто контейнер хедера
-             const header = document.querySelector('header');
-             if(header) {
-                 // В портфолио кнопка "Зайти на сайт" обычно последняя
-                 const lastItem = header.lastElementChild;
-                 if(lastItem && !document.querySelector('.lang-switcher-container')) {
-                     const btns = createLangButtons();
-                     // Вставляем ПЕРЕД кнопкой "Зайти на сайт"
-                     header.insertBefore(btns, lastItem);
-                     return;
-                 }
-             }
-        } else if (!toolsHeaderRight.querySelector('.lang-switcher-container')) {
+        const portfolioBtn = document.querySelector('header a[href*="index.html"]');
+        if (portfolioBtn && !document.querySelector('header .lang-switcher-container')) {
             const btns = createLangButtons();
-            // Вставляем в начало правого блока (перед музыкой)
+            portfolioBtn.parentElement.insertBefore(btns, portfolioBtn);
+            return;
+        }
+
+        let toolsHeaderRight = document.querySelector('header .flex.items-center.gap-3:last-child');
+        if (toolsHeaderRight && !toolsHeaderRight.querySelector('.lang-switcher-container')) {
+            const btns = createLangButtons();
             toolsHeaderRight.insertBefore(btns, toolsHeaderRight.firstChild);
         }
     }
@@ -133,12 +102,10 @@
     }
 })();
 
-// --- ОСТАЛЬНОЙ КОД ---
-
 const STORAGE_KEY = 'allisighs_local_user';
 const DISCORD_TOKEN_KEY = 'allisighs_discord_token';
 const DISCORD_USER_KEY = 'allisighs_discord_user_cache';
-const MUSIC_URL = "https://cdn.pixabay.com/audio/2022/03/24/audio_341b439502.mp3"; 
+const MUSIC_URL = "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Kevin_MacLeod/Impact/Kevin_MacLeod_-_8bit_Dungeon_Level.mp3";
 const MUSIC_STATE_KEY = 'allisighs_music_state'; 
 
 tailwind.config = {
@@ -187,12 +154,13 @@ function initMusicPlayer() {
     const headerRight = document.querySelector('header .flex.items-center.gap-3:last-child');
     if(!headerRight) return;
     
-    // Проверка дублей
     if(document.querySelector('.music-trigger')) return;
 
     const btn = document.createElement('button');
-    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group";
+    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group z-50";
     btn.title = "music: on/off";
+    btn.style.zIndex = "100";
+    btn.style.cursor = "pointer";
     btn.innerHTML = `
         <span class="material-symbols-rounded text-[24px] music-icon">music_note</span>
         <div class="music-notes-container">
@@ -201,7 +169,6 @@ function initMusicPlayer() {
         </div>
     `;
     
-    // В тулзах вставляем ПОСЛЕ кнопок языка (они уже там есть, если initLanguage сработал раньше)
     const langContainer = headerRight.querySelector('.lang-switcher-container');
     if (langContainer) {
         headerRight.insertBefore(btn, langContainer.nextSibling);
@@ -216,24 +183,30 @@ function initMusicPlayer() {
     let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
     audio.currentTime = savedState.currentTime;
 
-    const togglePlay = () => {
+    const togglePlay = async (e) => {
+        if(e) e.preventDefault();
+        
         if(audio.paused) {
-            const p = audio.play();
-            if (p) {
-                p.then(() => {
-                    btn.classList.add('music-playing');
-                    btn.querySelector('.music-icon').innerText = 'volume_up';
-                }).catch(e => console.log("Autoplay blocked (interaction required)", e));
+            try {
+                await audio.play();
+                btn.classList.add('music-playing');
+                btn.querySelector('.music-icon').innerText = 'volume_up';
+                btn.style.color = '#ccff00';
+            } catch (err) {
+                console.error("Audio error:", err);
+                btn.classList.add('animate-pulse');
+                setTimeout(() => btn.classList.remove('animate-pulse'), 500);
             }
         } else {
             audio.pause();
             btn.classList.remove('music-playing');
             btn.querySelector('.music-icon').innerText = 'music_note';
+            btn.style.color = '';
         }
     };
 
     if(savedState.isPlaying) {
-        togglePlay();
+        togglePlay().catch(() => {});
     }
 
     btn.onclick = togglePlay;
