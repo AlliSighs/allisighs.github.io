@@ -182,21 +182,44 @@ function initMusicPlayer() {
         headerRight.insertBefore(btn, headerRight.firstChild);
     }
 
-    const audio = new Audio();
-    audio.src = MUSIC_URL;
-    audio.loop = true;
-    audio.volume = 0.3;
-    audio.load(); 
-
-    let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
-    if(savedState.currentTime) audio.currentTime = savedState.currentTime;
+    let audio = null;
+    let isReady = false;
 
     const togglePlay = async (e) => {
         if(e) e.preventDefault();
         
+        if(!audio) {
+            audio = new Audio();
+            audio.src = MUSIC_URL;
+            audio.loop = true;
+            audio.volume = 0.3;
+            audio.preload = 'none';
+            
+            audio.addEventListener('canplay', () => {
+                isReady = true;
+            }, { once: true });
+            
+            audio.addEventListener('error', (e) => {
+                console.error('Audio loading error:', e);
+                btn.style.opacity = '0.5';
+                btn.title = 'ошибка загрузки музыки';
+            });
+        }
+        
         if(audio.paused) {
             try {
                 btn.classList.add('animate-pulse');
+                
+                if(!isReady) {
+                    await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => reject(new Error('timeout')), 10000);
+                        audio.addEventListener('canplay', () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        }, { once: true });
+                    });
+                }
+                
                 await audio.play();
                 btn.classList.remove('animate-pulse');
                 btn.classList.add('music-playing');
@@ -205,6 +228,7 @@ function initMusicPlayer() {
             } catch (err) {
                 console.error("Audio error:", err);
                 btn.classList.remove('animate-pulse');
+                alert('не удалось воспроизвести музыку');
             }
         } else {
             audio.pause();
@@ -214,20 +238,10 @@ function initMusicPlayer() {
         }
     };
 
-    if(savedState.isPlaying) {
-        togglePlay().catch(() => {});
-    }
-
     btn.onclick = togglePlay;
-    window.addEventListener('beforeunload', () => {
-        localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({
-            isPlaying: !audio.paused,
-            currentTime: audio.currentTime
-        }));
-    });
 
     setInterval(() => {
-        if(audio.paused) {
+        if(!audio || audio.paused) {
             btn.classList.add('music-beckon');
             setTimeout(() => {
                 btn.classList.remove('music-beckon');
