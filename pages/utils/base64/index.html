@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <!-- FAVICONS & SEO -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
+    <link rel="apple-touch-icon" href="/siteicon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>allisighs tools // Base64</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../../../css/style.css">
+    <script src="../../../js/main.js"></script>
+</head>
+<body class="lowercase min-h-screen relative overflow-x-hidden selection:bg-lime selection:text-black font-sans antialiased">
+        <!-- LOADER -->
+    <div id="system-loader">
+        <div class="w-32 h-1 bg-gray-800 rounded overflow-hidden">
+            <div class="h-full bg-lime w-1/2 animate-[blob_2s_infinite]"></div>
+        </div>
+    </div>
+    
+    <header class="fixed top-0 w-full z-40 px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/80 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <a href="../../../" class="flex items-center gap-2 hover:text-lime transition-colors">
+                <span class="material-symbols-rounded text-lime text-[24px]">arrow_back</span>
+                <span class="font-mono font-bold tracking-tight">назад</span>
+            </a>
+        </div>
+        <div class="font-mono text-gray-500 text-xs lowercase">utils / base64</div>
+        <div class="flex items-center gap-3">
+            <span id="user-greeting" class="font-mono text-sm text-lime">...</span>
+            <button onclick="logout()" class="text-gray-600 hover:text-white transition-colors"><span class="material-symbols-rounded text-[20px]">logout</span></button>
+        </div>
+    </header>
+
+    <div class="pt-24 px-6 md:px-12 max-w-4xl mx-auto pb-12"><div class="bg-dark border border-white/10 p-8 rounded-2xl">
+    <h1 class="text-3xl font-black mb-6 lowercase">base64</h1>
+    <textarea id="base64-text" rows="6" placeholder="введи текст..." class="w-full bg-black border border-white/20 p-3 rounded-lg text-white focus:outline-none focus:border-lime font-mono mb-4"></textarea>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+        <button onclick="base64Action('encode')" class="bg-lime text-black font-bold py-3 rounded-lg lowercase">кодировать</button>
+        <button onclick="base64Action('decode')" class="bg-white/10 text-white font-bold py-3 rounded-lg lowercase">декодировать</button>
+    </div>
+    <div id="base64-output" class="hidden">
+        <div class="bg-black border border-lime/30 p-4 rounded-lg font-mono text-sm text-lime break-all" translate="no" class="notranslate" id="base64-result"></div>
+        <button onclick="copyToClipboard('base64-result')" class="mt-2 w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded-lg text-sm lowercase">скопировать</button>
+    </div>
+</div>    </div>
+</body>
+</html><script>function base64Action(mode) {
+    const text = document.getElementById('base64-text').value;
+    try {
+        let result;
+        if (mode === 'encode') result = btoa(unescape(encodeURIComponent(text)));
+        else result = decodeURIComponent(escape(atob(text)));
+        document.getElementById('base64-result').textContent = result;
+        document.getElementById('base64-output').classList.remove('hidden');
+    } catch (e) { alert('ошибка декодирования!'); }
+}</script>

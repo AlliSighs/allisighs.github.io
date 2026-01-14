@@ -1,0 +1,491 @@
+﻿<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <!-- FAVICONS & SEO -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
+    <link rel="apple-touch-icon" href="/siteicon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>allisighs tools // history maker</title>
+    <!-- ФАВИКОНКА -->
+    <link rel="icon" type="image/png" href="../../../assets/siteicon.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="../../../css/style.css">
+    <script src="../../../js/main.js"></script>
+    <style>
+        .virtual-scroller { position: relative; height: 100%; overflow-y: auto; will-change: transform; scroll-behavior: auto; }
+        .virtual-spacer { position: absolute; top: 0; left: 0; right: 0; z-index: 1; opacity: 0; pointer-events: none; }
+        .virtual-content { position: absolute; top: 0; left: 0; right: 0; z-index: 2; }
+        .log-line { 
+            height: 24px; line-height: 24px; white-space: pre; overflow: hidden; 
+            padding: 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a3a3a3; 
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .log-line:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        
+        .file-item { 
+            padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); 
+            cursor: pointer; display: flex; align-items: center; gap: 10px;
+            transition: 0.2s; font-family: 'JetBrains Mono', monospace; font-size: 11px; 
+        }
+        .file-item:hover { background: rgba(255,255,255,0.05); }
+        .file-item.active { background: rgba(204, 255, 0, 0.1); border-right: 2px solid #ccff00; color: #fff; }
+        .file-badge { font-size: 9px; padding: 1px 4px; border-radius: 2px; background: rgba(255,255,255,0.1); margin-left: auto; }
+    </style>
+</head>
+<body class="lowercase min-h-screen relative overflow-hidden selection:bg-lime selection:text-black font-sans antialiased bg-black">
+    
+    <div id="system-loader">
+        <div class="w-32 h-1 bg-gray-800 rounded overflow-hidden">
+            <div class="h-full bg-lime w-1/2 animate-[blob_2s_infinite]"></div>
+        </div>
+    </div>
+
+    <!-- Загрузочный оверлей -->
+    <div id="proc-overlay" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm hidden flex-col items-center justify-center p-4">
+        <div class="text-lime text-4xl mb-4 animate-spin material-symbols-rounded">settings</div>
+        <div id="proc-text" class="font-mono text-sm text-white mb-2">ОБРАБОТКА...</div>
+        <div class="w-64 h-1 bg-white/10 rounded overflow-hidden">
+            <div id="proc-bar" class="h-full bg-lime w-0 transition-all"></div>
+        </div>
+    </div>
+    
+    <header class="fixed top-0 w-full z-40 px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/80 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <a href="../../../" class="flex items-center gap-2 text-gray-400 hover:text-lime transition-colors">
+                <span class="material-symbols-rounded text-[24px]">arrow_back</span>
+                <span class="font-mono font-bold tracking-tight">назад</span>
+            </a>
+        </div>
+        <div class="font-mono text-gray-500 text-xs lowercase">minecraft / history processor</div>
+        <div class="flex items-center gap-3">
+            <span id="user-greeting" class="font-mono text-sm text-lime">...</span>
+            <button onclick="logout()" class="text-gray-600 hover:text-white transition-colors"><span class="material-symbols-rounded text-[20px]">logout</span></button>
+        </div>
+    </header>
+
+    <div class="pt-20 px-4 h-screen flex flex-col md:flex-row gap-4 pb-4">
+        
+        <!-- SIDEBAR: FILES -->
+        <div class="w-full md:w-[320px] bg-dark border border-white/10 rounded-xl flex flex-col shrink-0 z-20 relative bg-black h-full overflow-hidden">
+            <div class="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-white leading-none">файлы</h2>
+                    <div class="text-[10px] text-gray-500 font-mono mt-1">всего: <span id="file-count" class="text-lime">0</span></div>
+                </div>
+                <!-- Кнопка выбрать все -->
+                <button onclick="HistoryApp.toggleSelectAll()" class="p-2 hover:bg-white/10 rounded text-gray-400 hover:text-white transition-colors" title="выбрать все">
+                    <span class="material-symbols-rounded text-lg" id="select-all-icon">done_all</span>
+                </button>
+            </div>
+
+            <div class="p-4 space-y-4">
+                <div id="drop-zone" class="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:border-lime hover:bg-white/5 transition-all cursor-pointer group">
+                    <input type="file" id="file-input" multiple accept=".log,.txt,.zip,.gz,.tar" class="hidden">
+                    <span class="material-symbols-rounded text-3xl text-gray-600 group-hover:text-lime mb-2">upload_file</span>
+                    <p class="text-xs text-gray-400 font-mono group-hover:text-white">.log, .txt, .zip, .tar.gz</p>
+                </div>
+                
+                <button onclick="HistoryApp.deleteSelected()" id="btn-delete" class="w-full py-2 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-rounded text-sm">delete</span> УДАЛИТЬ
+                </button>
+            </div>
+
+            <div id="file-list" class="flex-1 overflow-y-auto border-t border-white/5">
+                <div class="p-4 text-center text-gray-600 italic text-xs">нет файлов...</div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1 bg-black border border-white/10 rounded-xl flex flex-col relative overflow-hidden">
+            
+            <!-- TABS -->
+            <div class="flex items-center gap-1 p-2 border-b border-white/5 bg-white/5">
+                <button onclick="HistoryApp.switchTab('filter')" id="tab-btn-filter" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-lime text-black flex items-center gap-2">
+                    <span class="material-symbols-rounded text-sm">filter_list</span> ОБРАБОТКА
+                </button>
+                <button onclick="HistoryApp.switchTab('search')" id="tab-btn-search" class="px-4 py-2 rounded-lg text-xs font-bold transition-all text-gray-400 hover:text-white hover:bg-white/5 flex items-center gap-2">
+                    <span class="material-symbols-rounded text-sm">search</span> ПОИСК
+                </button>
+                
+                <div class="ml-auto flex items-center gap-2">
+                    <span id="current-file-name" class="text-xs font-mono text-gray-500 truncate max-w-[200px]">---</span>
+                </div>
+            </div>
+
+            <!-- TAB: FILTER -->
+            <div id="tab-filter" class="flex-1 flex flex-col h-full overflow-hidden">
+                <div class="p-4 border-b border-white/5 flex flex-wrap gap-4 items-center bg-black/50">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-party" checked class="accent-lime w-4 h-4 rounded bg-black border-white/20">
+                        <span class="text-xs font-bold text-white">ПАТИ</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-global" checked class="accent-lime w-4 h-4 rounded bg-black border-white/20">
+                        <span class="text-xs font-bold text-white">ГЛОБАЛ</span>
+                    </label>
+                    
+                    <div class="h-6 w-px bg-white/10 mx-2"></div>
+                    
+                    <button onclick="HistoryApp.process()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                        ОБРАБОТАТЬ
+                    </button>
+
+                    <div class="ml-auto flex gap-2">
+                        <input type="text" id="dl-name" placeholder="название файла..." class="bg-black border border-white/20 px-3 py-1.5 rounded-lg text-white font-mono text-xs focus:border-lime outline-none w-40">
+                        <button onclick="HistoryApp.download()" id="btn-dl" disabled class="bg-lime text-black px-4 py-2 rounded-lg text-xs font-bold hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            СКАЧАТЬ
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex overflow-hidden">
+                    <div class="w-1/2 border-r border-white/5 flex flex-col bg-[#050505]">
+                        <div class="px-3 py-1 bg-white/5 text-[10px] text-gray-500 font-mono uppercase tracking-wider">ИСХОДНИК</div>
+                        <div id="virtual-container" class="virtual-scroller flex-1">
+                            <div class="virtual-spacer"></div>
+                            <div class="virtual-content"></div>
+                        </div>
+                    </div>
+                    <div class="w-1/2 flex flex-col bg-[#050505]">
+                        <div class="px-3 py-1 bg-white/5 text-[10px] text-lime font-mono uppercase tracking-wider">РЕЗУЛЬТАТ</div>
+                        <textarea translate="no" class="notranslate" id="output-log" readonly class="flex-1 bg-transparent p-3 font-mono text-xs text-lime/80 resize-none focus:outline-none" placeholder="нажми обработать..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SEARCH -->
+            <div id="tab-search" class="hidden flex-1 flex-col h-full overflow-hidden">
+                <div class="p-4 border-b border-white/5 bg-black/50 flex gap-2">
+                    <input type="text" id="search-input" placeholder="поиск по всем файлам..." class="flex-1 bg-black border border-white/20 px-4 py-3 rounded-xl text-white font-mono text-sm focus:border-lime outline-none" onkeydown="if(event.key==='Enter') HistoryApp.search()">
+                    <button onclick="HistoryApp.search()" class="bg-lime text-black px-6 py-3 rounded-xl font-bold hover:bg-white transition-colors">
+                        <span class="material-symbols-rounded">search</span>
+                    </button>
+                </div>
+                
+                <div id="search-results" class="flex-1 overflow-y-auto p-4 space-y-1 bg-[#050505]">
+                    <div class="text-center text-gray-600 mt-20">
+                        <span class="material-symbols-rounded text-4xl mb-2">manage_search</span>
+                        <div class="text-xs font-mono">введи текст для поиска по всем загруженным логам</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        class VirtualViewer {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.spacer = this.container.querySelector('.virtual-spacer');
+                this.content = this.container.querySelector('.virtual-content');
+                this.lines = [];
+                this.rowHeight = 24;
+                this.container.addEventListener('scroll', () => this.render());
+            }
+            
+            load(lines) {
+                this.lines = lines || [];
+                this.container.scrollTop = 0;
+                this.spacer.style.height = `${this.lines.length * this.rowHeight}px`;
+                this.render();
+            }
+
+            render() {
+                if(!this.lines.length) { this.content.innerHTML = '<div class="p-4 text-gray-600 text-xs italic">пусто...</div>'; return; }
+                const scrollTop = this.container.scrollTop;
+                const viewHeight = this.container.clientHeight;
+                const startNode = Math.floor(scrollTop / this.rowHeight);
+                const endNode = Math.min(this.lines.length, Math.ceil((scrollTop + viewHeight) / this.rowHeight) + 1);
+                this.content.style.transform = `translateY(${startNode * this.rowHeight}px)`;
+                let html = '';
+                for(let i = startNode; i < endNode; i++) {
+                    const txt = this.lines[i].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    html += `<div class="log-line">${txt}</div>`;
+                }
+                this.content.innerHTML = html;
+            }
+        }
+
+        const HistoryApp = {
+            files: {}, 
+            activeFile: null,
+            viewer: null,
+            allSelected: false,
+
+            init() {
+                this.viewer = new VirtualViewer('virtual-container');
+                const dz = document.getElementById('drop-zone');
+                const inp = document.getElementById('file-input');
+                const dlInp = document.getElementById('dl-name');
+
+                dz.onclick = () => inp.click();
+                inp.onchange = e => this.handleFiles(e.target.files);
+                dz.ondragover = e => { e.preventDefault(); dz.classList.add('border-lime', 'bg-lime/5'); };
+                dz.ondragleave = () => { dz.classList.remove('border-lime', 'bg-lime/5'); };
+                dz.ondrop = e => { 
+                    e.preventDefault(); dz.classList.remove('border-lime', 'bg-lime/5');
+                    this.handleFiles(e.dataTransfer.files);
+                };
+                dlInp.oninput = () => { document.getElementById('btn-dl').disabled = !dlInp.value.trim(); };
+            },
+
+            uiLoading(msg, show) {
+                const el = document.getElementById('proc-overlay');
+                document.getElementById('proc-text').innerText = msg;
+                el.classList.toggle('hidden', !show);
+                el.style.display = show ? 'flex' : 'none';
+            },
+
+            async handleFiles(fileList) {
+                if(!fileList.length) return;
+                this.uiLoading("ЧТЕНИЕ ФАЙЛОВ...", true);
+                await new Promise(r => setTimeout(r, 50)); 
+
+                for(const file of fileList) {
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        const uint8 = new Uint8Array(buffer);
+
+                        if (uint8.length > 2 && uint8[0] === 0x1F && uint8[1] === 0x8B) {
+                            try {
+                                const decompressed = pako.ungzip(uint8);
+                                if (file.name.endsWith('.tar.gz') || file.name.endsWith('.tgz')) {
+                                    this.parseTar(decompressed);
+                                } else {
+                                    const text = this.decode(decompressed);
+                                    this.addFile(file.name.replace('.gz', ''), text);
+                                }
+                            } catch (e) { console.error(e); }
+                        } else if (file.name.endsWith('.zip')) {
+                            const zip = new JSZip();
+                            const content = await zip.loadAsync(buffer);
+                            for(const name in content.files) {
+                                if(!content.files[name].dir) {
+                                    const u8 = await content.files[name].async('uint8array');
+                                    this.addFile(name, this.decode(u8));
+                                }
+                            }
+                        } else {
+                            this.addFile(file.name, this.decode(uint8));
+                        }
+                    } catch(e) { console.error(e); }
+                }
+                this.renderFileList();
+                this.uiLoading("", false);
+            },
+
+            parseTar(buffer) {
+                let offset = 0;
+                while (offset < buffer.length) {
+                    const header = buffer.subarray(offset, offset + 512);
+                    if (header[0] === 0) break;
+                    let name = new TextDecoder().decode(header.subarray(0, 100)).replace(/\0/g, '').trim();
+                    const size = parseInt(new TextDecoder().decode(header.subarray(124, 136)).replace(/\0/g, '').trim(), 8);
+                    const type = String.fromCharCode(header[156]);
+                    offset += 512;
+                    if (type === '0' || type === '\0') {
+                        const content = buffer.subarray(offset, offset + size);
+                        const cleanName = name.split('/').pop(); 
+                        this.addFile(cleanName, this.decode(content));
+                    }
+                    offset += Math.ceil(size / 512) * 512;
+                }
+            },
+
+            decode(u8) {
+                let isUtf = true;
+                for(let i=0; i<Math.min(u8.length, 4096); i++) {
+                    if(u8[i] > 127 && (u8[i] < 192 || (u8[i+1] && (u8[i+1] & 0xC0) !== 0x80))) { isUtf = false; break; }
+                }
+                return new TextDecoder(isUtf ? 'utf-8' : 'windows-1251').decode(u8).split(/\r?\n/);
+            },
+
+            addFile(name, lines) {
+                if(this.files[name]) name += `_${Math.floor(Math.random()*1000)}`;
+                this.files[name] = lines;
+                if(!this.activeFile) this.loadFile(name);
+            },
+
+            renderFileList() {
+                const list = document.getElementById('file-list');
+                const keys = Object.keys(this.files).sort();
+                document.getElementById('file-count').innerText = keys.length;
+                list.innerHTML = '';
+                
+                if(!keys.length) { list.innerHTML = '<div class="p-4 text-center text-gray-600 italic text-xs">нет файлов...</div>'; return; }
+                
+                keys.forEach(k => {
+                    const el = document.createElement('div');
+                    el.className = `file-item ${k === this.activeFile ? 'active' : 'text-gray-400'}`;
+                    
+                    // Checkbox
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'accent-lime w-3 h-3 rounded bg-black border-white/20 file-cb';
+                    cb.onclick = (e) => e.stopPropagation();
+                    cb.dataset.name = k;
+
+                    const info = document.createElement('div');
+                    info.className = 'flex-1 overflow-hidden truncate px-2';
+                    info.innerText = k;
+
+                    const badge = document.createElement('span');
+                    badge.className = 'file-badge';
+                    badge.innerText = this.files[k].length;
+
+                    el.append(cb, info, badge);
+                    el.onclick = () => this.loadFile(k);
+                    list.appendChild(el);
+                });
+            },
+
+            loadFile(name) {
+                this.activeFile = name;
+                document.getElementById('current-file-name').innerText = name;
+                this.renderFileList();
+                // Re-check active item's checkbox if it was selected globally? No, keep independent.
+                this.viewer.load(this.files[name]);
+                document.getElementById('output-log').value = ''; 
+                this.switchTab('filter');
+            },
+
+            toggleSelectAll() {
+                this.allSelected = !this.allSelected;
+                const cbs = document.querySelectorAll('.file-cb');
+                cbs.forEach(cb => cb.checked = this.allSelected);
+                document.getElementById('select-all-icon').innerText = this.allSelected ? 'remove_done' : 'done_all';
+                document.getElementById('btn-delete').innerHTML = this.allSelected ? 
+                    '<span class="material-symbols-rounded text-sm">delete</span> УДАЛИТЬ ВСЁ' : 
+                    '<span class="material-symbols-rounded text-sm">delete</span> УДАЛИТЬ';
+            },
+
+            deleteSelected() {
+                const cbs = Array.from(document.querySelectorAll('.file-cb:checked'));
+                const keys = cbs.map(cb => cb.dataset.name);
+                
+                if (keys.length === 0) {
+                    // Если ничего не выбрано, спросим "Удалить всё?"
+                    if(Object.keys(this.files).length > 0 && confirm('Удалить ВСЕ файлы?')) {
+                        this.clearAll();
+                    }
+                    return;
+                }
+
+                keys.forEach(k => delete this.files[k]);
+                
+                // Если активный файл удален
+                if (keys.includes(this.activeFile)) {
+                    this.activeFile = null;
+                    this.viewer.load([]);
+                    document.getElementById('current-file-name').innerText = '---';
+                }
+                
+                this.renderFileList();
+                // Reset select all state
+                this.allSelected = false;
+                document.getElementById('select-all-icon').innerText = 'done_all';
+            },
+
+            clearAll() {
+                this.files = {};
+                this.activeFile = null;
+                this.viewer.load([]);
+                this.renderFileList();
+                document.getElementById('current-file-name').innerText = '---';
+                document.getElementById('output-log').value = '';
+                document.getElementById('search-results').innerHTML = '';
+            },
+
+            async process() {
+                if(!this.activeFile) return alert('нет файла');
+                this.uiLoading("ФИЛЬТРАЦИЯ...", true);
+                const lines = this.files[this.activeFile];
+                const p = document.getElementById('chk-party').checked;
+                const g = document.getElementById('chk-global').checked;
+                const res = [];
+                const batch = 10000;
+                
+                for(let i=0; i<lines.length; i+=batch) {
+                    const end = Math.min(i+batch, lines.length);
+                    for(let j=i; j<end; j++) {
+                        const l = lines[j];
+                        const idx = l.indexOf('[CHAT]');
+                        if(idx === -1) continue;
+                        const msg = l.substring(idx+6).trim();
+                        if(!msg) continue;
+                        const isP = msg.includes('Party');
+                        const isG = /^\[.+?\]/.test(msg);
+                        if((isP && p) || (isG && g) || (!isP && !isG)) res.push(msg);
+                    }
+                    document.getElementById('proc-bar').style.width = `${(end/lines.length)*100}%`;
+                    await new Promise(r => setTimeout(r, 0));
+                }
+                document.getElementById('output-log').value = res.join('\n');
+                this.uiLoading("", false);
+            },
+
+            download() {
+                const txt = document.getElementById('output-log').value;
+                let name = document.getElementById('dl-name').value;
+                if(!txt || !name) return;
+                if(!name.endsWith('.txt')) name += '.txt';
+                const b = new Blob([txt], {type:'text/plain;charset=utf-8'});
+                saveAs(b, name);
+            },
+
+            async search() {
+                const q = document.getElementById('search-input').value.toLowerCase();
+                const keys = Object.keys(this.files);
+                if(!q || !keys.length) return;
+                this.uiLoading("ПОИСК...", true);
+                const resBox = document.getElementById('search-results');
+                resBox.innerHTML = '';
+                let found = 0; const batch = 20000;
+
+                for(let f=0; f<keys.length; f++) {
+                    const fname = keys[f];
+                    const lines = this.files[fname];
+                    for(let i=0; i<lines.length; i+=batch) {
+                        const end = Math.min(i+batch, lines.length);
+                        let fragment = '';
+                        for(let j=i; j<end; j++) {
+                            if(lines[j].toLowerCase().includes(q)) {
+                                found++;
+                                const txt = lines[j].replace(/</g, "&lt;");
+                                fragment += `<div class="p-2 border-b border-white/5 hover:bg-white/5 cursor-pointer text-gray-300 font-mono text-xs break-all" onclick="HistoryApp.loadFile('${fname}')"><span class="text-lime mr-2">[${fname}]</span> ${txt}</div>`;
+                            }
+                        }
+                        resBox.innerHTML += fragment;
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+                if(found === 0) resBox.innerHTML = '<div class="p-4 text-center text-gray-500">ничего не найдено</div>';
+                this.uiLoading("", false);
+            },
+
+            switchTab(tab) {
+                const filter = document.getElementById('tab-filter');
+                const search = document.getElementById('tab-search');
+                if(tab === 'filter') {
+                    filter.classList.remove('hidden'); search.classList.add('hidden'); search.classList.remove('flex');
+                    this.viewer.render();
+                } else {
+                    filter.classList.add('hidden'); search.classList.remove('hidden'); search.classList.add('flex');
+                }
+            }
+        };
+
+        window.addEventListener('load', () => HistoryApp.init());
+    </script>
+</body>
+</html>

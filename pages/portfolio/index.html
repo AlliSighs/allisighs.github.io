@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <!-- FAVICONS & SEO -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
+    <link rel="apple-touch-icon" href="/siteicon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlliSighs // Portfolio</title>
+    <link rel="icon" type="image/png" href="../../assets/siteicon.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="../../css/style.css">
+    <script src="../../js/main.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        lime: '#ccff00',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #ccff00; }
+
+        .glow-text { text-shadow: 0 0 20px rgba(204,255,0,0.3); }
+        
+        .stat-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .stat-card:hover { border-color: #ccff00; background: rgba(255,255,255,0.05); transform: translateY(-5px); }
+        
+        .project-card { 
+            position: relative; 
+            overflow: hidden; 
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #0a0a0a;
+            transition: all 0.3s ease;
+        }
+        .project-card:hover { border-color: #ccff00; transform: translateY(-5px); }
+        .project-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.3;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 0;
+        }
+        .project-card:hover .project-bg { opacity: 0.5; transform: scale(1.05); }
+        .project-content { position: relative; z-index: 10; background: linear-gradient(to top, #000 10%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0.6) 100%); height: 100%; display: flex; flex-direction: column; }
+
+        .service-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .service-card:hover { border-color: #ccff00; background: rgba(204,255,0,0.02); }
+        
+        .ds-tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: #1e1f22;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            width: 250px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+        .ds-tooltip.active { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        .ds-tooltip::after {
+            content: ''; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+            border-width: 5px; border-style: solid;
+            border-color: #1e1f22 transparent transparent transparent;
+        }
+
+        .skill-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .skill-badge:hover { border-color: #ccff00; background: rgba(204,255,0,0.1); color: #ccff00; }
+        
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .accordion-item.active .accordion-content { max-height: 200px; }
+        .accordion-item.active .arrow { transform: rotate(180deg); }
+
+        .timeline-entry { opacity: 0; transform: translateY(50px); transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+        .timeline-entry.visible { opacity: 1; transform: translateY(0); }
+        
+        .timeline-card {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+        }
+        .timeline-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; w-full; h-full;
+            background: radial-gradient(circle at top right, rgba(204,255,0,0.05), transparent 40%);
+            pointer-events: none;
+        }
+        .timeline-card:hover {
+            border-color: #ccff00;
+            transform: scale(1.02);
+            box-shadow: 0 10px 40px -10px rgba(204, 255, 0, 0.1);
+        }
+        .timeline-year {
+            font-family: 'JetBrains Mono', monospace;
+            color: #ccff00;
+            text-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
+            display: inline-block;
+            border-bottom: 1px solid rgba(204,255,0,0.3);
+            padding-bottom: 4px;
+            margin-bottom: 12px;
+        }
+        .timeline-center-line {
+            background: linear-gradient(to bottom, transparent, #ccff00, transparent);
+            box-shadow: 0 0 15px #ccff00;
+        }
+        .timeline-node {
+            box-shadow: 0 0 20px rgba(204, 255, 0, 0.8);
+            background: #000;
+            z-index: 20;
+        }
+        .timeline-content-text p {
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+        .timeline-content-text p:last-child { margin-bottom: 0; }
+        .highlight { color: white; font-weight: 600; }
+        
+        .playground-card {
+            background: #0c0c0c;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s;
+        }
+        .playground-card:hover {
+            border-color: #ccff00;
+            transform: translateY(-3px);
+            background: #111;
+        }
+    </style>
+</head>
+<body class="lowercase min-h-screen bg-black text-white font-sans antialiased overflow-x-hidden selection:bg-lime selection:text-black">
+    
+    <div id="system-loader">
+        <div class="fixed inset-0 bg-black z-[100] flex items-center justify-center transition-opacity duration-500" id="loader-bg">
+            <div class="w-32 h-1 bg-gray-800 rounded overflow-hidden">
+                <div class="h-full bg-lime w-1/2 animate-[blob_2s_infinite]"></div>
+            </div>
+        </div>
+    </div>
+
+    <header class="fixed top-0 w-full z-50 px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/90 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <span class="text-[#ccff00] text-2xl font-black tracking-tighter glow-text">ALLISIGHS</span>
+        </div>
+        <div class="hidden md:flex gap-8 text-xs font-mono text-gray-400">
+            <a href="#about" class="hover:text-[#ccff00] transition-colors">обо мне</a>
+            <a href="#timeline" class="hover:text-[#ccff00] transition-colors">путь</a>
+            <a href="#projects" class="hover:text-[#ccff00] transition-colors">проекты</a>
+            <a href="#playground" class="hover:text-[#ccff00] transition-colors">лаб</a>
+            <a href="#services" class="hover:text-[#ccff00] transition-colors">услуги</a>
+        </div>
+        <a href="../../" class="flex items-center gap-2 bg-white/5 hover:bg-[#ccff00] hover:text-black border border-white/10 px-4 py-2 rounded-full transition-all text-xs font-bold">
+            <span class="material-symbols-rounded text-sm">terminal</span>
+            <span class="uppercase">Зайти на мой сайт с тулзами</span>
+        </a>
+    </header>
+
+    <section class="min-h-screen flex items-center justify-center relative pt-20">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-1/4 left-1/4 w-[300px] h-[300px] bg-lime/10 rounded-full blur-[100px] animate-pulse"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-white/5 rounded-full blur-[100px]"></div>
+        </div>
+        
+        <div class="max-w-4xl mx-auto px-6 text-center z-10">
+            <div class="inline-block px-3 py-1 border border-lime/30 rounded-full bg-lime/5 text-[#ccff00] text-[10px] font-mono mb-6 tracking-widest uppercase animate-fade-in-up">Full-Stack Developer</div>
+            <h1 class="text-6xl md:text-8xl font-black tracking-tighter mb-6 leading-[0.9]">
+                создаю вещи,<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">которые работают.</span>
+            </h1>
+            <p class="text-gray-400 max-w-xl mx-auto text-lg mb-10 font-light leading-relaxed">
+                16 лет. Швеция. 6+ лет за компьютером.<br>
+                Разработчик, который превращает идеи в продукты для тысяч людей.
+                
+                Добро пожаловать в моё портфолио!
+            </p>
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <a href="#projects" class="bg-[#ccff00] text-black font-bold px-8 py-4 rounded-xl hover:shadow-[0_0_30px_-5px_rgba(204,255,0,0.5)] transition-all flex items-center justify-center gap-2">
+                    посмотреть работы <span class="material-symbols-rounded text-lg">arrow_downward</span>
+                </a>
+                <a href="https://t.me/AlliSighs" target="_blank" class="bg-white/5 border border-white/10 text-white font-bold px-8 py-4 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                    написать в tg <span class="material-symbols-rounded text-lg">send</span>
+                </a>
+                <a href="../../" class="bg-[#ccff00] text-black font-bold px-8 py-4 rounded-xl hover:shadow-[0_0_30px_-5px_rgba(204,255,0,0.5)] transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-rounded text-lg">terminal</span>
+                    <span>мой сайт с тулсами</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section id="stats" class="py-20 border-y border-white/5 bg-black/50">
+        <div class="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="stat-card p-6 rounded-2xl text-center">
+                <div class="text-4xl font-black text-[#ccff00] mb-1 counter" data-target="6000">0</div>
+                <div class="text-xs font-mono text-gray-500 uppercase tracking-widest">пользователей</div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl text-center">
+                <div class="text-4xl font-black text-white mb-1 counter" data-target="1387">0</div>
+                <div class="text-xs font-mono text-gray-500 uppercase tracking-widest">заказов</div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl text-center">
+                <div class="text-4xl font-black text-white mb-1 counter" data-target="350">0</div>
+                <div class="text-xs font-mono text-gray-500 uppercase tracking-widest">отзывов 5★</div>
+            </div>
+            <div class="stat-card p-6 rounded-2xl text-center">
+                <div class="text-4xl font-black text-[#ccff00] mb-1 counter" data-target="365">0</div>
+                <div class="text-xs font-mono text-gray-500 uppercase tracking-widest">skv members</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-32 px-6">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-4xl font-black mb-12 flex items-center gap-4 text-white">
+                <span class="w-12 h-1 bg-[#ccff00]"></span> о себе
+            </h2>
+            <div class="space-y-8 text-gray-300 leading-relaxed font-light">
+                <p class="text-xl text-white font-normal">
+                    Я - 16-летний разработчик, который живет в цифровом мире с 6 лет. Пока другие играли во дворе (я тоже но не часто), я исследовал интернет и строил сообщества.
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <p>
+                            Мой путь начался с YouTube (11 каналов, 150+ видео), но потеря всего контента из-за авторских прав научила меня: <span class="text-white font-bold">создавай своё</span>.
+                        </p>
+                        <p>
+                            Программирую с 14 лет. Потеря любимого сервера <strong>ParkourBeat</strong> в 2021 году стала травмой, но и мотивацией. Я понял: если хочешь, чтобы что-то жило вечно - напиши это сам.
+                        </p>
+                        <p>
+                            Я пережил взлеты (создание "Мира Шаблонов" #1 в СНГ) и падения (предательство и копирование). Сейчас я живу в Швеции, разрабатываю софт для 6000+ человек и возрождаю легендарные проекты.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
+                        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <span class="material-symbols-rounded text-lime">bolt</span> Философия
+                        </h3>
+                        <p class="text-sm italic text-gray-400 mb-4">
+                            "Лучшие продукты решают твои собственные проблемы. FunPay Tools я писал для себя - теперь им пользуются тысячи."
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-400 border border-white/10">Оптимист</span>
+                            <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-400 border border-white/10">Bug Hunter</span>
+                            <span class="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-400 border border-white/10">Creator</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="timeline" class="py-32 px-6 bg-[#080808] overflow-hidden relative">
+        <div class="max-w-5xl mx-auto relative z-10">
+            <h2 class="text-4xl font-black mb-24 text-center">мой путь</h2>
+            
+            <div class="relative">
+                <div class="timeline-center-line absolute left-4 md:left-1/2 top-0 bottom-0 w-[2px] md:-translate-x-1/2"></div>
+
+                <div class="timeline-entry flex flex-col md:flex-row justify-between items-center w-full mb-20 relative">
+                    <div class="w-full md:w-5/12 pl-12 md:pl-0 md:pr-12 text-left md:text-right">
+                        <div class="timeline-card p-8 rounded-2xl">
+                            <div class="timeline-year text-2xl font-bold">2017-2019</div>
+                            <h3 class="text-xl font-bold text-white mb-4">Эра YouTube и Открытий</h3>
+                            <div class="text-gray-400 text-sm timeline-content-text">
+                                <p>В 7 лет получил доступ к ПК. Создал 11 каналов, 150+ видео: туториалы, эксперименты. Один ролик выстрелил на <span class="highlight">150,000 просмотров</span>. YouTube предложил партнерку, но страйки убили всё. Пришлось удалить историю.</p>
+                                <p>Нашел сайт с новыми серверами Minecraft - это были как сундуки с сокровищами. Так я нашел <span class="highlight">ParkourBeat</span>. Это было не просто игра, а "дом". Прошел 150 уровней, включая легендарный "Beat Saber".</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-black border-2 border-[#ccff00] rounded-full timeline-node md:-translate-x-1/2 z-20 mt-[-100%] md:mt-0"></div>
+                    <div class="hidden md:block w-5/12"></div>
+                </div>
+
+                <div class="timeline-entry flex flex-col md:flex-row justify-between items-center w-full mb-20 relative">
+                    <div class="hidden md:block w-5/12"></div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-black border-2 border-[#ccff00] rounded-full timeline-node md:-translate-x-1/2 z-20 mt-[-100%] md:mt-0"></div>
+                    <div class="w-full md:w-5/12 pl-12 md:pl-12 text-left">
+                        <div class="timeline-card p-8 rounded-2xl">
+                            <div class="timeline-year text-2xl font-bold">2020</div>
+                            <h3 class="text-xl font-bold text-white mb-4">"Мир Шаблонов" и Троянский Конь</h3>
+                            <div class="text-gray-400 text-sm timeline-content-text">
+                                <p>Создал "Мир Шаблонов", став #1 в СНГ. Появились десятки копий, ворующих трафик. в 2024 я пошёл на абсурд: <span class="highlight">зашел с твинк-аккаунта</span> на самую крупную копию (5000 юзеров), подружился с админами, и стал их главным кодером, зная всю кухню изнутри.</p>
+                                <p>Но моральное давление от того, что мой оригинал украли, было слишком сильным. Я не выдержал и удалил свой оригинальный сервер.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-entry flex flex-col md:flex-row justify-between items-center w-full mb-20 relative">
+                    <div class="w-full md:w-5/12 pl-12 md:pl-0 md:pr-12 text-left md:text-right">
+                        <div class="timeline-card p-8 rounded-2xl">
+                            <div class="timeline-year text-2xl font-bold">2021-2023</div>
+                            <h3 class="text-xl font-bold text-white mb-4">Война: Соковыжималка & TLauncher</h3>
+                            <div class="text-gray-400 text-sm timeline-content-text">
+                                <p>ParkourBeat закрылся. Объявил войну серверам YukiKawaii, точнее Михаилу Ковалёву Васильевичу (партнер <span class="highlight">TLauncher</span>). Владелец (Михаил) пытался давить на жалость, но мы с командой "Соковыжималка" продолжали находить дюпы и крашить спавны.</p>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-black border-2 border-[#ccff00] rounded-full timeline-node md:-translate-x-1/2 z-20 mt-[-100%] md:mt-0"></div>
+                    <div class="hidden md:block w-5/12"></div>
+                </div>
+
+                <div class="timeline-entry flex flex-col md:flex-row justify-between items-center w-full mb-20 relative">
+                    <div class="hidden md:block w-5/12"></div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-black border-2 border-[#ccff00] rounded-full timeline-node md:-translate-x-1/2 z-20 mt-[-100%] md:mt-0"></div>
+                    <div class="w-full md:w-5/12 pl-12 md:pl-12 text-left">
+                        <div class="timeline-card p-8 rounded-2xl">
+                            <div class="timeline-year text-2xl font-bold">2024</div>
+                            <h3 class="text-xl font-bold text-white mb-4">Возрождение</h3>
+                            <div class="text-gray-400 text-sm timeline-content-text">
+                                <p>Начал возрождать ParkourBeat с нуля. Сделал YouTube Party мод: игроки буквально <span class="highlight">сидят на ступеньках</span> в игре и смотрят синхронизированный YouTube на блоке-телевизоре (пока в разработке).</p>
+                                <p>Написал <span class="highlight">Ceylon Client</span> с обходами, которые потом украли крупные клиенты Augustus и LiquidBounce.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-entry flex flex-col md:flex-row justify-between items-center w-full mb-20 relative">
+                    <div class="w-full md:w-5/12 pl-12 md:pl-0 md:pr-12 text-left md:text-right">
+                        <div class="timeline-card p-8 rounded-2xl border-[#ccff00]/30 shadow-[0_0_20px_rgba(204,255,0,0.1)]">
+                            <div class="timeline-year text-2xl font-bold">2025-2026</div>
+                            <h3 class="text-xl font-bold text-white mb-4">Швеция & FunPay Tools</h3>
+                            <div class="text-gray-400 text-sm timeline-content-text">
+                                <p>Переезд в Швецию. Школа на iPad'ах, но скучаю по 3 котам в Украине.</p>
+                                <p><span class="highlight">FunPay Tools</span>: начинал для себя, теперь 6000 юзеров. Автоответчик без API. Discord Cloner стал просто инструментом на сайте. Мне 16. Я готов к серьезному бизнесу.</p>
+                                <p>В TikTok набрал <span class="highlight">2.5М просмотров</span> на AI-пранках с пердежом (Sora 2). Написал StoriesWall Bot для идеальных рамок в Telegram.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute left-4 md:left-1/2 w-6 h-6 bg-[#ccff00] border-4 border-black rounded-full timeline-node md:-translate-x-1/2 z-20 shadow-[0_0_20px_#ccff00] animate-pulse-slow mt-[-100%] md:mt-0"></div>
+                    <div class="hidden md:block w-5/12"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="skills" class="py-20 px-6">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-4xl font-black mb-12 flex items-center justify-end gap-4 text-white">
+                навыки <span class="w-12 h-1 bg-[#ccff00]"></span>
+            </h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-sm">
+                <div class="skill-badge"><span class="material-symbols-rounded text-orange-500">code</span> Java</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-purple-400">android</span> Kotlin</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-yellow-400">javascript</span> JavaScript</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-blue-400">data_object</span> TypeScript</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-orange-600">html</span> HTML</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-blue-500">terminal</span> Python</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-cyan-400">deployed_code</span> React / Next.js</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-teal-400">css</span> Tailwind</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-indigo-500">smart_toy</span> Discord.js/py</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-green-500">extension</span> Chrome Ext</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-red-500">bug_report</span> Reversing</div>
+                <div class="skill-badge"><span class="material-symbols-rounded text-gray-400">database</span> SQL</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects" class="py-32 px-6 bg-[#080808]">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-black mb-12 text-left flex items-center gap-4">
+                <span class="w-12 h-1 bg-[#ccff00]"></span> проекты
+            </h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="group project-card h-[450px] rounded-3xl md:col-span-2">
+                    <div class="project-bg" style="background-image: url('../assets/fptools.png');"></div>
+                    <div class="project-content p-8">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-[#ccff00] text-black px-2 py-1 rounded text-[10px] font-bold font-mono tracking-widest mb-2 inline-block">FLAGSHIP</span>
+                                <h3 class="text-3xl font-black text-white">FunPay Tools</h3>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-[#ccff00] font-mono">6000+ USERS</div>
+                            </div>
+                        </div>
+                        <p class="text-gray-200 text-sm mb-6 flex-1 drop-shadow-md max-w-lg">
+                            Комплексный набор инструментов для продавцов. Автоподнятие, автоответчик (без API, only /runner!), генераторы контента, кастомизация интерфейса. Open Source решение, изменившее рынок. На сайте можно скачать версию в виде Android-приложения (базовые автоматизированные функции, бесплатно)
+                        </p>
+                        <ul class="text-xs text-gray-400 font-mono mb-6 space-y-1">
+                            <li>> 150+ отзывов 5★</li>
+                            <li>> Автоответчик 24/7</li>
+                            <li>> Система "Свой-Чужой"</li>
+                        </ul>
+                        <div class="flex gap-4 mt-auto">
+                            <a href="https://chromewebstore.google.com/detail/funpay-tools/pibmnjjfpojnakckilflcboodkndkibb?hl=ru" target="_blank" class="bg-[#ccff00] text-black px-6 py-3 rounded-xl font-bold text-sm hover:brightness-110 border border-[#ccff00]">Chrome Store</a>
+                            <a href="https://funpaytools.vercel.app/" target="_blank" class="bg-[#ccff00] text-black px-6 py-3 rounded-xl font-bold text-sm hover:brightness-110 border border-[#ccff00]">посмотреть сайт</a>
+                            <a href="https://github.com/XaviersDev/FunPay-Tools" target="_blank" class="bg-white/10 backdrop-blur text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/20">GitHub</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group project-card h-[450px] rounded-3xl border-red-500/30 hover:border-red-500">
+                    <div class="project-bg" style="background-image: url('../assets/minecraft_alt_bg.png'); filter: hue-rotate(-20deg);"></div>
+                    <div class="absolute inset-0 bg-red-900/20 mix-blend-overlay"></div>
+                    <div class="project-content p-8">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-red-600 text-white px-2 py-1 rounded text-[10px] font-bold font-mono tracking-widest mb-2 inline-block">BUG HUNTING</span>
+                                <h3 class="text-2xl font-black text-red-500 drop-shadow-sm">Соковыжималка</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-100 text-sm mb-4 flex-1 drop-shadow-md font-medium">
+                            Команда по уничтожению нечестных серверов (включая партнеров TLauncher). Мы находим критические баги: краш спавна, дюпы, снос аккаунтов. Принципиальная позиция против обмана игроков.
+                        </p>
+                        <div class="flex gap-4 mt-auto">
+                            <a href="https://dsc.gg/sokovizimalka" target="_blank" class="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-red-500 transition-colors">Discord</a>
+                            <a href="https://youtube.com/@clonersYT" target="_blank" class="bg-white/10 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/20">YouTube</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group project-card h-[450px] rounded-3xl border-purple-500/30 hover:border-purple-500">
+                    <div class="project-bg" style="background-image: url('../assets/parkourbeat.png');"></div>
+                    <div class="absolute inset-0 bg-purple-900/20 mix-blend-overlay"></div>
+                    <div class="project-content p-8">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-purple-500 text-white px-2 py-1 rounded text-[10px] font-bold font-mono tracking-widest mb-2 inline-block">REVIVAL</span>
+                                <h3 class="text-2xl font-black text-purple-300">ParkourBeat</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-100 text-sm mb-4 flex-1 drop-shadow-md font-medium">
+                            Возрождение легендарного сервера "Паркур под музыку". Оригинал закрылся в 2021 с потерей кода. Восстанавливаю механики, уровни и атмосферу с нуля.
+                        </p>
+                        <div class="flex gap-4 mt-auto">
+                            <a href="https://dsc.gg/parkourbeat" target="_blank" class="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-purple-500 transition-colors">Discord</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group project-card h-[450px] rounded-3xl border-blue-500/30 hover:border-blue-500">
+                    <div class="project-bg" style="background-image: url('../assets/minecraft_alt_bg.png'); filter: hue-rotate(180deg);"></div>
+                    <div class="absolute inset-0 bg-blue-900/20 mix-blend-overlay"></div>
+                    <div class="project-content p-8">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-blue-500 text-white px-2 py-1 rounded text-[10px] font-bold font-mono tracking-widest mb-2 inline-block">JAVA CLIENT</span>
+                                <h3 class="text-2xl font-black text-blue-400">Ceylon Client</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-100 text-sm mb-4 flex-1 drop-shadow-md font-medium">
+                            Приватный чит для обхода Intave. Phase, Teleport, WallHack. Мои модули позже скопировали крупные клиенты (Augustus, LiquidBounce).
+                        </p>
+                        <div class="flex gap-4 mt-auto">
+                            <a href="https://dsc.gg/sokovizimalka" target="_blank" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-blue-500 transition-colors">Форум (DS)</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group project-card h-[450px] rounded-3xl">
+                    <div class="project-bg" style="background-image: url('../assets/discord_world.png');"></div>
+                    <div class="project-content p-8">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-indigo-500 text-white px-2 py-1 rounded text-[10px] font-bold font-mono tracking-widest mb-2 inline-block">WEB TOOL</span>
+                                <h3 class="text-2xl font-black text-white">Discord Cloner</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-200 text-sm mb-6 flex-1 drop-shadow-md">
+                            Просто одна из моих тулз на сайте. Безопасное копирование серверов через браузер. Никаких exe файлов.
+                        </p>
+                        <div class="flex gap-4 mt-auto">
+                            <a href="../discord/cloner/" class="bg-white text-black px-6 py-3 rounded-xl font-bold text-sm hover:bg-gray-200">Запустить</a>
+                        </div>
+                    </div>
+                </div>
+                
+                 <div class="group project-card h-[450px] rounded-3xl border-sky-500/30 hover:border-sky-500">
+                    <div class="project-bg bg-sky-900"></div>
+                    <div class="project-content p-8">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="bg-sky-500 text-white px-2 py-1 rounded text-[10px] font-bold font-mono tracking-widest mb-2 inline-block">PYTHON BOT</span>
+                                <h3 class="text-2xl font-black text-sky-400">StoriesWall Bot</h3>
+                            </div>
+                        </div>
+                        <p class="text-gray-100 text-sm mb-4 flex-1 drop-shadow-md font-medium">
+                            Бот для автоматической нарезки фото под сторис Telegram с идеальными пропорциями. Набрал 2000 подписчиков через TikTok за 3 месяца.
+                        </p>
+                        <div class="flex gap-4 mt-auto">
+                            <a href="https://t.me/storieswall_bot" target="_blank" class="bg-sky-600 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-sky-500 transition-colors">Запустить</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="playground" class="py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-black mb-12 text-center">забытый код</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-mono text-sm">
+                
+                <div class="playground-card p-6 rounded-xl">
+                    <div class="text-[#ccff00] text-xs uppercase mb-2 font-bold tracking-widest">MC Plugin • Java</div>
+                    <h3 class="text-white font-bold text-lg mb-2">Dragon Egg Infection</h3>
+                    <p class="text-gray-400 mb-4">Разбил яйцо дракона — мир начинает медленно заражаться темной материей от точки удара. Написал за 4 часа.</p>
+                    <div class="text-[10px] text-gray-500">Статус: Private</div>
+                </div>
+
+                <div class="playground-card p-6 rounded-xl">
+                    <div class="text-[#ccff00] text-xs uppercase mb-2 font-bold tracking-widest">MC Plugin • Spigot</div>
+                    <h3 class="text-white font-bold text-lg mb-2">Discord Chat Style</h3>
+                    <p class="text-gray-400 mb-4">Полная визуализация интерфейса Discord внутри чата Minecraft. Поддержка аватарок.</p>
+                    <div class="text-[10px] text-gray-500">Статус: Active</div>
+                </div>
+
+                <div class="playground-card p-6 rounded-xl">
+                    <div class="text-[#ccff00] text-xs uppercase mb-2 font-bold tracking-widest">MC Mini-Game</div>
+                    <h3 class="text-white font-bold text-lg mb-2">Aim Trainer</h3>
+                    <p class="text-gray-400 mb-4">Механика в стиле Murder Mystery для тренировки аима между двумя людьми. Лук, меч, динамичные катки</p>
+                    <div class="text-[10px] text-gray-500">Статус: Private</div>
+                </div>
+
+                <div class="playground-card p-6 rounded-xl">
+                    <div class="text-[#ccff00] text-xs uppercase mb-2 font-bold tracking-widest">Web Tool • Discord</div>
+                    <h3 class="text-white font-bold text-lg mb-2">Emoji & Sticker DL</h3>
+                    <p class="text-gray-400 mb-4">Скрипт для скачивания абсолютно всех эмодзи и стикеров с любого сервера одним ZIP архивом.</p>
+                    <div class="text-[10px] text-gray-500">Статус: Available</div>
+                </div>
+
+                <div class="playground-card p-6 rounded-xl">
+                    <div class="text-[#ccff00] text-xs uppercase mb-2 font-bold tracking-widest">MC Tool • JSON</div>
+                    <h3 class="text-white font-bold text-lg mb-2">Generator RP Skins</h3>
+                    <p class="text-gray-400 mb-4">тулза, где загружаешь 2 скина, выбирая версию, и генерируется ресурс-пак где ванильные скины заменяются на твои.</p>
+                    <div class="text-[10px] text-gray-500">Статус: Available</div>
+                </div>
+
+                <div class="playground-card p-6 rounded-xl">
+                    <div class="text-[#ccff00] text-xs uppercase mb-2 font-bold tracking-widest">Log Processor</div>
+                    <h3 class="text-white font-bold text-lg mb-2">MC Log Handler</h3>
+                    <p class="text-gray-400 mb-4">Обработчик логов Minecraft для быстрой фильтрации и поиска нужной информации.</p>
+                    <div class="text-[10px] text-gray-500">Статус: Available</div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="py-20 bg-[#080808]">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-4xl font-black mb-12 text-center">услуги</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="service-card p-8 rounded-2xl flex flex-col group hover:-translate-y-2 transition-transform">
+                    <div class="text-[#ccff00] font-black text-2xl mb-2">от $4</div>
+                    <h3 class="font-bold text-white mb-4">Мелкие задачи</h3>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-6 flex-1 font-mono">
+                        <li>> Userscripts JS</li>
+                        <li>> Простые боты</li>
+                        <li>> Конфиг плагинов</li>
+                    </ul>
+                    <a href="#contact" class="text-center bg-white/5 border border-white/10 hover:bg-white/10 text-white py-3 rounded-xl text-sm font-bold transition-colors">Заказать</a>
+                </div>
+
+                <div class="service-card p-8 rounded-2xl flex flex-col border-lime/30 relative overflow-hidden group hover:-translate-y-2 transition-transform bg-[#0c0c0c]">
+                    <div class="absolute top-0 right-0 bg-[#ccff00]/10 border-l border-b border-[#ccff00]/20 text-[#ccff00] text-[10px] font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
+                    
+                    <div class="text-[#ccff00] font-black text-2xl mb-2">от $12</div>
+                    <h3 class="font-bold text-white mb-4">Средние проекты</h3>
+                    <ul class="text-sm text-gray-300 space-y-2 mb-6 flex-1 font-mono">
+                        <li>> Discord под ключ</li>
+                        <li>> Самописные плагины</li>
+                        <li>> Telegram боты</li>
+                        <li>> Парсинг данных</li>
+                    </ul>
+                    <a href="#contact" class="text-center bg-black border border-[#ccff00] text-[#ccff00] hover:bg-[#ccff00] hover:text-black py-3 rounded-xl text-sm font-bold transition-colors shadow-[0_0_20px_rgba(204,255,0,0.1)]">Заказать</a>
+                </div>
+
+                <div class="service-card p-8 rounded-2xl flex flex-col group hover:-translate-y-2 transition-transform">
+                    <div class="text-[#ccff00] font-black text-2xl mb-2">от $25</div>
+                    <h3 class="font-bold text-white mb-4">Крупные проекты</h3>
+                    <ul class="text-sm text-gray-400 space-y-2 mb-6 flex-1 font-mono">
+                        <li>> Браузерные расширения</li>
+                        <li>> Full-Stack сайты</li>
+                        <li>> Сложные системы</li>
+                    </ul>
+                    <a href="#contact" class="text-center bg-white/5 border border-white/10 hover:bg-white/10 text-white py-3 rounded-xl text-sm font-bold transition-colors">Обсудить</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 border-t border-white/5">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-black mb-12 text-center">что говорят люди</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-zinc-900/50 p-6 rounded-xl border border-white/5">
+                    <p class="text-gray-300 italic mb-4">"Расширение классное, без него уже не могу работать. Автоответчик - это просто магия. Клиенты получают ответы мгновенно."</p>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-lime rounded-full flex items-center justify-center text-black font-bold">U</div>
+                        <div class="text-sm font-bold text-white">Пользователь FunPay</div>
+                    </div>
+                </div>
+                <div class="bg-zinc-900/50 p-6 rounded-xl border border-white/5">
+                    <p class="text-gray-300 italic mb-4">"Лучшее расширение для FunPay. Столько функций, что не знаешь что выбрать. Всё полезно."</p>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-lime rounded-full flex items-center justify-center text-black font-bold">R</div>
+                        <div class="text-sm font-bold text-white">Reviewer Chrome Store</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row justify-center gap-6 mt-8 text-sm">
+                <a href="https://chromewebstore.google.com/detail/funpay-tools/pibmnjjfpojnakckilflcboodkndkibb/reviews" target="_blank" class="text-lime hover:underline">Читать все отзывы расширения -></a>
+                <a href="https://funpay.com/users/6402834/" target="_blank" class="text-lime hover:underline">Читать все 350+ отзывов на FunPay -></a>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-20 px-6 bg-[#080808]">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="text-3xl font-black mb-8 text-center">FAQ</h2>
+            <div class="space-y-4">
+                <div class="accordion-item bg-zinc-900 rounded-xl overflow-hidden cursor-pointer" onclick="this.classList.toggle('active')">
+                    <div class="p-6 flex justify-between items-center">
+                        <h3 class="font-bold text-white">Ты правда делаешь всё сам в 16 лет?</h3>
+                        <span class="material-symbols-rounded arrow transition-transform">expand_more</span>
+                    </div>
+                    <div class="accordion-content px-6 pb-0 text-gray-400 text-sm">
+                        <p class="pb-6">Да. Я за компьютером с 8 лет. Программирую с 14. Это моя жизнь.</p>
+                    </div>
+                </div>
+                
+                <div class="accordion-item bg-zinc-900 rounded-xl overflow-hidden cursor-pointer" onclick="this.classList.toggle('active')">
+                    <div class="p-6 flex justify-between items-center">
+                        <h3 class="font-bold text-white">Почему FunPay Tools бесплатный?</h3>
+                        <span class="material-symbols-rounded arrow transition-transform">expand_more</span>
+                    </div>
+                    <div class="accordion-content px-6 pb-0 text-gray-400 text-sm">
+                        <p class="pb-6">Open Source - это философия. я делаю его, потому-что это моё хобби. Но я планирую Premium версию с расширенными функциями (Android приложение).</p>
+                    </div>
+                </div>
+
+                <div class="accordion-item bg-zinc-900 rounded-xl overflow-hidden cursor-pointer" onclick="this.classList.toggle('active')">
+                    <div class="p-6 flex justify-between items-center">
+                        <h3 class="font-bold text-white">Какие гарантии?</h3>
+                        <span class="material-symbols-rounded arrow transition-transform">expand_more</span>
+                    </div>
+                    <div class="accordion-content px-6 pb-0 text-gray-400 text-sm">
+                        <p class="pb-6">350+ пятизвёздочных отзывов на FunPay. 6000+ пользователей. Моя репутация говорит сама за себя.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-20 border-t border-white/5 bg-[#050505]">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-black mb-6">давай работать вместе</h2>
+            <p class="text-gray-400 mb-10 max-w-xl mx-auto">
+                Есть идея? Я превращу её в код. Discord боты, веб-сайты, автоматизация - любой сложности.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4 relative">
+                <a href="https://t.me/AlliSighs" target="_blank" class="flex items-center gap-3 bg-[#24A1DE] text-white px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all">
+                    <span class="material-symbols-rounded">send</span> Telegram
+                </a>
+                
+                <div class="relative group">
+                    <button onclick="toggleDsPopup()" class="flex items-center gap-3 bg-[#5865F2] text-white px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all">
+                        <span class="material-symbols-rounded">forum</span> discord
+                    </button>
+                    <div id="ds-popup" class="ds-tooltip">
+                        <div class="font-bold text-white mb-1">Мой Discord:</div>
+                        <div class="bg-black/50 p-2 rounded border border-white/10 text-lime font-mono text-sm mb-2 select-all cursor-text" onclick="navigator.clipboard.writeText('imyajuise'); alert('Скопировано!')">imyajuise</div>
+                        <div class="text-[10px] text-gray-400 leading-tight">
+                            Меня также можно найти на Discord серверах моих проектов.
+                        </div>
+                    </div>
+                </div>
+
+                <a href="https://github.com/XaviersDev" target="_blank" class="flex items-center gap-3 bg-[#333] text-white px-6 py-3 rounded-xl font-bold hover:bg-white hover:text-black transition-all">
+                    <span class="material-symbols-rounded">code</span> GitHub
+                </a>
+                <a href="https://funpay.com/users/6402834/" target="_blank" class="flex items-center gap-3 bg-[#208bfe] text-white px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all">
+                    <span class="material-symbols-rounded">shopping_cart</span> FunPay
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-10 text-center text-gray-600 font-mono text-xs border-t border-white/5 relative">
+        <p>© 2026 AlliSighs. All rights reserved.</p>
+        <p class="mt-2">сделано с любовью</p>
+        
+        <button onclick="alert('Ты нашел пасхалку! Напиши мне в Telegram \'EASTER_EGG\' и получи скидку 10% на первый заказ 🍋')" class="absolute bottom-5 right-5 w-4 h-4 bg-transparent hover:bg-lime/20 rounded-full cursor-default"></button>
+    </footer>
+
+    <script>
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader-bg');
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('system-loader').style.display = 'none';
+                }, 500);
+            }, 1000);
+        });
+
+        const counters = document.querySelectorAll('.counter');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = +entry.target.getAttribute('data-target');
+                    let count = 0;
+                    const inc = target / 100;
+                    const updateCount = () => {
+                        count += inc;
+                        if (count < target) {
+                            entry.target.innerText = Math.ceil(count) + (target > 5000 ? '+' : '');
+                            requestAnimationFrame(updateCount);
+                        } else {
+                            entry.target.innerText = target + (target > 5000 ? '+' : '');
+                        }
+                    };
+                    updateCount();
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        counters.forEach(c => observer.observe(c));
+
+        const timelineEntries = document.querySelectorAll('.timeline-entry');
+        const timelineObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.2 });
+        
+        timelineEntries.forEach(entry => timelineObserver.observe(entry));
+
+        function toggleDsPopup() {
+            const popup = document.getElementById('ds-popup');
+            popup.classList.toggle('active');
+            
+            if(popup.classList.contains('active')) {
+                setTimeout(() => {
+                    popup.classList.remove('active');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

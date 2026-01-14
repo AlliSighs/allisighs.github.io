@@ -1,0 +1,447 @@
+﻿<!DOCTYPE html>
+<html lang="ru" class="scroll-smooth">
+<head>
+    <!-- FAVICONS & SEO -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
+    <link rel="apple-touch-icon" href="/siteicon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>allisighs tools // system</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js"></script>
+    <style>
+        .tool-card { 
+            position: relative;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: transform;
+            overflow: hidden;
+            z-index: 1;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tool-card:hover { 
+            transform: translateY(-6px); 
+            border-color: rgba(204, 255, 0, 0.5); 
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5);
+            background-color: rgba(10, 10, 10, 0.98);
+            z-index: 10;
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 20;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 2px;
+            pointer-events: none;
+            transition: transform 0.3s ease;
+        }
+
+        .short-desc {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            margin-top: 0.5rem;
+            color: #9ca3af;
+            display: block;
+        }
+        
+        .tool-card:hover .short-desc {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        
+        .tool-card:hover .card-content {
+            transform: translateY(-5px);
+        }
+
+        .feature-list {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            padding: 1.5rem;
+            padding-top: 5rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease 0.1s;
+            pointer-events: none;
+            
+            background: linear-gradient(to bottom, transparent 0%, #050505 30%, #050505 100%);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tool-card:hover .feature-list {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto; /* ВКЛЮЧАЕМ МЫШКУ И СКРОЛЛ */
+        }
+
+        .feature-list-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 5px;
+            padding-bottom: 20px;
+            overscroll-behavior: contain;
+        }
+        .feature-list-inner::-webkit-scrollbar { width: 3px; }
+        .feature-list-inner::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .feature-list-inner::-webkit-scrollbar-thumb { background: #ccff00; border-radius: 10px; }
+        .feature-list-inner::-webkit-scrollbar-thumb:hover { background: #fff; }
+        .f-item { 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 8px; 
+            font-size: 11px; 
+            color: #d4d4d4; 
+            line-height: 1.4;
+            padding: 2px 0;
+        }
+        .f-icon { font-size: 14px; color: #ccff00; flex-shrink: 0; margin-top: 1px; }
+        .dev-badge, .prod-badge { 
+            position: absolute; top: 12px; right: 12px; 
+            font-size: 9px; padding: 2px 6px; border-radius: 4px; 
+            font-weight: bold; font-family: monospace; z-index: 50; 
+        }
+        .dev-badge { background: rgba(255,50,50,0.1); border: 1px solid rgba(255,50,50,0.3); color: #ff5555; }
+        .prod-badge { background: rgba(204,255,0,0.1); border: 1px solid rgba(204,255,0,0.3); color: #ccff00; }
+
+        .feature-list::after {
+            content: '\e5cf';
+            font-family: 'Material Symbols Rounded';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ccff00;
+            font-size: 18px;
+            animation: bounce-arrow 1.5s infinite;
+            opacity: 0.8;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(204,255,0,0.5);
+        }
+
+        .tool-card:not(:hover) .feature-list::after {
+            display: none;
+        }
+
+        @keyframes bounce-arrow {
+            0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.5; }
+            50% { transform: translateX(-50%) translateY(3px); opacity: 1; }
+        }
+
+        .animate-blob { 
+            will-change: transform; 
+            transform: translateZ(0);
+            filter: blur(80px);
+        }
+        @media (max-width: 1024px) {
+            .animate-blob { filter: blur(60px); }
+        }
+    </style>
+</head>
+<body class="lowercase min-h-screen relative overflow-x-hidden selection:bg-lime selection:text-black font-sans antialiased">
+    
+    <div id="system-loader">
+        <div class="w-32 h-1 bg-gray-800 rounded overflow-hidden">
+            <div class="h-full bg-lime w-1/2 animate-[blob_2s_infinite]"></div>
+        </div>
+    </div>
+
+    <div id="auth-screen" class="fixed inset-0 z-[100] bg-black hidden flex-col items-center justify-center p-4">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none"><div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-lime/10 rounded-full blur-[100px]"></div></div>
+        <div class="relative z-10 w-full max-w-md bg-dark border border-white/10 p-8 rounded-2xl backdrop-blur-xl">
+            <h1 class="text-3xl font-black mb-2 text-white tracking-tighter">кто ты?</h1>
+            <p class="text-gray-500 text-sm font-mono mb-6">локальная идентификация пользователя.</p>
+            <form onsubmit="register(event)" class="space-y-4">
+                <div><label class="block text-xs font-mono text-lime mb-2">никнейм</label><input type="text" id="nickname-input" required placeholder="введи имя..." class="w-full bg-black border border-white/20 p-4 rounded-xl text-white focus:outline-none focus:border-lime transition-all font-mono placeholder-gray-700"></div>
+                <button type="submit" class="w-full bg-lime text-black font-bold py-4 rounded-xl hover:bg-white transition-colors">подтвердить -></button>
+                <button type="button" onclick="loginAnon()" class="w-full bg-white/5 text-gray-400 text-xs font-mono py-3 rounded-xl hover:text-white hover:bg-white/10 transition-colors">продолжить как аноним</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-content" class="opacity-0 transition-opacity duration-700">
+        <div class="fixed inset-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+            <div class="absolute top-0 left-0 w-[50vw] h-[50vw] bg-lime/5 rounded-full animate-blob" style="filter: blur(80px);"></div>
+            <div class="absolute bottom-0 right-0 w-[40vw] h-[40vw] bg-white/5 rounded-full animate-blob animation-delay-2000" style="filter: blur(80px);"></div>
+        </div>
+
+        <header class="fixed top-0 w-full z-40 px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/80 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-rounded text-lime text-[24px]">terminal</span>
+                <span class="font-mono font-bold tracking-tight text-sm md:text-base">allisighs tools</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 font-mono text-xs text-gray-400">
+                <a href="#discord" class="hover:text-lime transition-colors">discord</a>
+                <a href="#minecraft" class="hover:text-lime transition-colors">minecraft</a>
+                <a href="#other" class="hover:text-lime transition-colors">утилиты</a>
+                <a href="#products" class="hover:text-lime transition-colors">продукты</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="user-greeting" class="font-mono text-sm text-lime">...</span>
+                <button onclick="logout()" class="text-gray-600 hover:text-white transition-colors"><span class="material-symbols-rounded text-[20px]">logout</span></button>
+            </div>
+        </header>
+
+        <section class="pt-36 pb-16 px-6 md:px-12 max-w-[1600px] mx-auto">
+            <div class="inline-flex items-center gap-2 border border-lime/20 bg-lime/5 px-3 py-1 rounded-full mb-6">
+                <div class="w-2 h-2 bg-lime animate-pulse rounded-full"></div><span class="text-xs font-mono text-lime">сайт использует cookie, пользуясь им вы соглашаетесь на это</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-none">привет, <span id="hero-name" class="text-transparent bg-clip-text bg-gradient-to-r from-lime to-white">юзер</span>.</h1>
+            <p class="text-gray-400 max-w-2xl text-lg font-light leading-relaxed mb-8">добро пожаловать в мой сайт! здесь лежат инструменты для уничтожения рутины. при наводке на инструмент вы можете увидеть, что в нём есть.</p>
+            
+            <a href="pages/portfolio/" class="inline-flex items-center gap-3 bg-gradient-to-r from-lime/10 to-lime/20 border border-lime/30 text-lime px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-[0_0_30px_-5px_rgba(204,255,0,0.3)] hover:-translate-y-1 transition-all group backdrop-blur-md">
+                <span>кто я такой? портфолио?</span>
+                <span class="material-symbols-rounded group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </a>
+        </section>
+
+        <section id="discord" class="section-bg py-16 px-6 md:px-12" style="background-image: url('assets/discord_world.png'); background-size: cover; background-position: center;">
+            <div class="section-content max-w-[1600px] mx-auto">
+                <div class="flex items-center gap-4 mb-10"><img src="assets/discord_logo.png" alt="ds" class="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(88,101,242,0.5)]"> <h2 class="text-3xl font-bold">discord tools</h2></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    
+                    <a href="pages/discord/cloner/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">STABLE</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">content_copy</span>
+                            <h3 class="font-bold text-white text-lg mb-1">полное клонирование</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">копия любого сервера по токену.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">dns</span> структура каналов и категорий</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">badge</span> роли и права доступа</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">image</span> аватарка и настройки</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">sticker</span> эмодзи и стикеры</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">forum</span> сообщения (webhooks)</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="pages/discord/emoji/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">READY</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">download_for_offline</span>
+                            <h3 class="font-bold text-white text-lg mb-1">скачивание эмодзи</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">дамп стикеров и эмодзи.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">visibility</span> предпросмотр всех эмодзи</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">sticker</span> поддержка стикеров</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">archive</span> скачивание zip архивом</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="pages/discord/roles/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">READY</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">admin_panel_settings</span>
+                            <h3 class="font-bold text-white text-lg mb-1">иконки ролей</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">выгрузка иконок.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">filter_alt</span> фильтр ролей без иконок</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">high_quality</span> максимальное качество</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">bolt</span> мгновенная выгрузка</div>
+                            </div>
+                        </div>
+                    </a>
+
+                     <a href="pages/discord/webhook/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">READY</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">send</span>
+                            <h3 class="font-bold text-white text-lg mb-1">сендер вебхуков</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">отправка embed.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">visibility</span> живой предпросмотр</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">code</span> конструктор embed</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">face</span> кастомный ник и аватар</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="pages/discord/info/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">READY</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">security</span>
+                            <h3 class="font-bold text-white text-lg mb-1">инфо о сервере</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">поиск дыр в защите и детальная информация.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">policy</span> аудит ролей и прав</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">lock_open</span> поиск открытых каналов</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">score</span> оценка безопасности (0-100)</div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="pages/discord/soundboard/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">READY</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">graphic_eq</span>
+                            <h3 class="font-bold text-white text-lg mb-1">soundboard дамп</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">скачать звуки в mp3.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">play_arrow</span> прослушивание перед скачиванием</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">archive</span> упаковка всей звуковой панели в ZIP</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">equalizer</span> сохранение оригинального качества</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="minecraft" class="section-bg py-16 px-6 md:px-12" style="background-image: url('assets/minecraft_bg.jpg'); background-size: cover; background-position: center;">
+            <div class="section-content max-w-[1600px] mx-auto">
+                <div class="flex items-center gap-4 mb-10"><img src="assets/minecraft_block.png" alt="mc" class="w-12 h-12 object-contain drop-shadow-[0_0_10px_rgba(204,255,0,0.3)]"> <h2 class="text-3xl font-bold">minecraft tools</h2></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <a href="pages/minecraft/history/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                        <span class="prod-badge">READY</span>
+                        <div class="card-content">
+                            <span class="material-symbols-rounded text-lime mb-4 block group-hover:scale-110 transition-transform origin-left">history_edu</span>
+                            <h3 class="font-bold text-white text-lg mb-1">мейкер истории</h3>
+                            <p class="text-sm text-gray-500 font-mono short-desc">майнкрафт log.txt -> чистый текст.</p>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-list-inner">
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">folder_zip</span> поддержка .zip, .gz, .tar</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">filter_alt</span> фильтры пати/глобал</div>
+                                <div class="f-item"><span class="material-symbols-rounded f-icon">speed</span> виртуальный скролл (быстро)</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="other" class="py-16 px-6 md:px-12 max-w-[1600px] mx-auto border-t border-white/5">
+            <div class="flex items-center gap-4 mb-10"><img src="assets/utils.png" alt="utils" class="w-10 h-10 object-contain opacity-90 pixelated"> <h2 class="text-3xl font-bold">другие утилиты</h2></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <a href="pages/utils/caesar/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                    <span class="prod-badge">READY</span>
+                    <div class="card-content">
+                        <span class="material-symbols-rounded text-gray-400 mb-4 block group-hover:text-lime transition-colors">lock</span>
+                        <h3 class="font-bold text-white mb-1">шифр цезаря</h3>
+                        <p class="text-xs text-gray-500 font-mono short-desc">шифровка со сдвигом.</p>
+                    </div>
+                    <div class="feature-list">
+                        <div class="feature-list-inner">
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">vpn_key</span> шифрование/дешифрование</div>
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">settings</span> настройка сдвига</div>
+                        </div>
+                    </div>
+                </a>
+                <a href="pages/utils/base64/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                    <span class="prod-badge">READY</span>
+                    <div class="card-content">
+                        <span class="material-symbols-rounded text-gray-400 mb-4 block group-hover:text-lime transition-colors">code</span>
+                        <h3 class="font-bold text-white mb-1">base64</h3>
+                        <p class="text-xs text-gray-500 font-mono short-desc">кодирование.</p>
+                    </div>
+                    <div class="feature-list">
+                        <div class="feature-list-inner">
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">sync_alt</span> encode / decode</div>
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">text_fields</span> поддержка utf-8</div>
+                        </div>
+                    </div>
+                </a>
+                <a href="pages/utils/ascii/" class="tool-card border border-white/5 p-6 rounded-2xl block group">
+                    <span class="prod-badge">READY</span>
+                    <div class="card-content">
+                        <span class="material-symbols-rounded text-gray-400 mb-4 block group-hover:text-lime transition-colors">font_download</span>
+                        <h3 class="font-bold text-white mb-1">ascii арт</h3>
+                        <p class="text-xs text-gray-500 font-mono short-desc">текст / картинка / рисование.</p>
+                    </div>
+                    <div class="feature-list">
+                        <div class="feature-list-inner">
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">image</span> конвертер картинок</div>
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">draw</span> холст для рисования</div>
+                            <div class="f-item"><span class="material-symbols-rounded f-icon">text_fields</span> генератор шрифтов</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section id="products" class="py-16 px-6 md:px-12 max-w-[1600px] mx-auto border-t border-white/5">
+            <div class="flex items-center gap-4 mb-10">
+                <img src="assets/products_icon.png" alt="prod" class="w-12 h-12 object-contain">
+                <h2 class="text-3xl font-bold">мои продукты</h2>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="relative bg-gradient-to-b from-white/5 to-black border border-white/10 p-8 rounded-3xl overflow-hidden hover:border-[#208bfe] transition-colors group flex flex-col justify-between h-full">
+                    <div>
+                        <div class="flex justify-between items-start mb-6">
+                            <img src="assets/fptools.png" class="w-16 h-16 object-contain rounded-xl bg-black/50 border border-white/10 p-2">
+                            <span class="text-[10px] font-mono border border-[#208bfe] text-[#208bfe] px-2 py-1 rounded">chrome ext</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2">funpay tools</h3>
+                        <p class="text-gray-400 text-sm mb-6 leading-relaxed">расширение для Chrome и приложение на Android для автоматизации продаж. автоподнятие лотов, уведомления, бинды ответов.</p>
+                    </div>
+                    <a href="https://funpaytools.vercel.app" target="_blank" class="w-full text-center bg-[#208bfe] hover:bg-white hover:text-black text-white py-3 rounded-xl font-bold transition-all text-sm">установить</a>
+                </div>
+                <div class="relative bg-gradient-to-b from-white/5 to-black border border-white/10 p-8 rounded-3xl overflow-hidden hover:border-[#0088cc] transition-colors group flex flex-col justify-between h-full">
+                    <div>
+                        <div class="flex justify-between items-start mb-6">
+                            <img src="assets/storieswall.png" class="w-16 h-16 object-contain rounded-xl bg-black/50 border border-white/10 p-2">
+                            <span class="text-[10px] font-mono border border-[#0088cc] text-[#0088cc] px-2 py-1 rounded">telegram bot</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2">stories wall bot</h3>
+                        <p class="text-gray-400 text-sm mb-6 leading-relaxed">бот для управления стеной историй. удобный интерфейс.</p>
+                    </div>
+                    <a href="https://t.me/storieswall_bot" target="_blank" class="w-full text-center bg-[#0088cc] hover:bg-white hover:text-black text-white py-3 rounded-xl font-bold transition-all text-sm">открыть бота</a>
+                </div>
+                <div class="relative overflow-hidden border border-red-900/50 p-8 rounded-3xl hover:border-red-500 transition-colors group flex flex-col justify-between h-full bg-black">
+                    <div class="absolute inset-0 z-0 opacity-50 bg-cover bg-center" style="background-image: url('assets/minecraft_alt_bg.png');"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-0"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <img src="assets/skv.png" class="w-16 h-16 object-contain rounded-xl bg-black/80 border border-red-500/30 p-1">
+                            <span class="text-[10px] font-mono border border-red-500 text-red-500 px-2 py-1 rounded bg-black">skv</span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-red-500 mb-2">соковыжималка</h3>
+                        <p class="text-gray-300 text-sm mb-6 leading-relaxed">команда по уничтожению серверов: mineblaze, cheatmine, masedworld, minepeak, mineberry.</p>
+                    </div>
+                    <a href="https://dsc.gg/sokovizimalka" target="_blank" class="relative z-10 w-full text-center border border-red-600 text-red-500 hover:bg-red-600 hover:text-white py-3 rounded-xl font-bold transition-all text-sm">присоединиться</a>
+                </div>
+            </div>
+        </section>
+
+        <footer class="mt-24 border-t border-white/10 bg-black/80 backdrop-blur-xl">
+            <div class="max-w-[1600px] mx-auto px-6 md:px-12 py-16 text-center">
+                <p class="text-xs text-lime font-mono mb-1">system: operational</p>
+                <p class="text-xs text-gray-600 font-mono">© 2026 allisighs tools</p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
