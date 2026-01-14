@@ -1,4 +1,5 @@
 (function() {
+    // --- ЛОГИКА ИКОНОК И ПУТЕЙ ---
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
         link = document.createElement('link');
@@ -16,6 +17,7 @@
     
     link.href = prefix + 'assets/siteicon.png';
 
+    // --- ЛОГИКА ПЕРЕВОДЧИКА (GOOGLE TRANSLATE) ---
     function initLanguageSwitcher() {
         if (!document.getElementById('google-script')) {
             const s = document.createElement('script');
@@ -108,6 +110,7 @@
     }
 })();
 
+// --- КОНСТАНТЫ ---
 const STORAGE_KEY = 'allisighs_local_user';
 const DISCORD_TOKEN_KEY = 'allisighs_discord_token';
 const DISCORD_USER_KEY = 'allisighs_discord_user_cache';
@@ -128,6 +131,7 @@ tailwind.config = {
     }
 }
 
+// --- INIT APP ---
 window.addEventListener('load', () => {
     const loader = document.getElementById('system-loader');
     if(loader) setTimeout(() => { loader.classList.add('hidden-screen'); }, 800);
@@ -146,6 +150,7 @@ window.addEventListener('load', () => {
         if(authScreen) {
             authScreen.style.display = 'flex';
         } else if(!window.location.href.includes('index.html')) {
+            // Исправлен путь редиректа
             window.location.href = window.location.href.includes('/pages/') ? '../../index.html' : 'index.html';
         }
     }
@@ -156,12 +161,19 @@ window.addEventListener('load', () => {
     initMusicPlayer();
 });
 
+// --- ИСПРАВЛЕННЫЙ МУЗЫКАЛЬНЫЙ ПЛЕЕР (SEAMLESS) ---
 function initMusicPlayer() {
     const headerRight = document.querySelector('header .flex.items-center.gap-3:last-child');
     if(!headerRight) return;
+    
+    if(document.querySelector('.music-trigger')) return;
+
+    // Создание кнопки
     const btn = document.createElement('button');
-    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group";
+    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group z-50";
     btn.title = "music: on/off";
+    btn.style.zIndex = "100";
+    btn.style.cursor = "pointer";
     btn.innerHTML = `
         <span class="material-symbols-rounded text-[24px] music-icon">music_note</span>
         <div class="music-notes-container">
@@ -170,34 +182,53 @@ function initMusicPlayer() {
         </div>
     `;
     
-    headerRight.insertBefore(btn, headerRight.firstChild);
+    // Вставка кнопки (с учетом переводчика)
+    const langContainer = headerRight.querySelector('.lang-switcher-container');
+    if (langContainer) {
+        headerRight.insertBefore(btn, langContainer.nextSibling);
+    } else {
+        headerRight.insertBefore(btn, headerRight.firstChild);
+    }
 
     const audio = new Audio(MUSIC_URL);
     audio.loop = true;
     audio.volume = 0.3;
 
-    // Восстановление состояния
+    // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ (КЛЮЧЕВОЙ МОМЕНТ)
     let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
     audio.currentTime = savedState.currentTime;
 
-    const togglePlay = () => {
+    const togglePlay = async (e) => {
+        if(e) e.preventDefault();
+        
         if(audio.paused) {
-            audio.play().then(() => {
+            try {
+                btn.classList.add('animate-pulse');
+                await audio.play();
+                btn.classList.remove('animate-pulse');
                 btn.classList.add('music-playing');
                 btn.querySelector('.music-icon').innerText = 'volume_up';
-            }).catch(e => console.log("Autoplay blocked", e));
+                btn.style.color = '#ccff00';
+            } catch (err) {
+                console.error("Audio play error:", err);
+                btn.classList.remove('animate-pulse');
+            }
         } else {
             audio.pause();
             btn.classList.remove('music-playing');
             btn.querySelector('.music-icon').innerText = 'music_note';
+            btn.style.color = '';
         }
     };
 
+    // Автостарт, если музыка играла до перезагрузки
     if(savedState.isPlaying) {
         togglePlay();
     }
 
     btn.onclick = togglePlay;
+
+    // СОХРАНЕНИЕ СОСТОЯНИЯ ПРИ УХОДЕ СО СТРАНИЦЫ
     window.addEventListener('beforeunload', () => {
         localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({
             isPlaying: !audio.paused,
@@ -205,6 +236,7 @@ function initMusicPlayer() {
         }));
     });
 
+    // Анимация зазывания
     setInterval(() => {
         if(audio.paused) {
             btn.classList.add('music-beckon');
@@ -215,6 +247,7 @@ function initMusicPlayer() {
     }, 15000);
 }
 
+// --- USER FUNCTIONS ---
 function register(event) {
     event.preventDefault();
     const input = document.getElementById('nickname-input');
@@ -233,7 +266,7 @@ function loginAnon() {
 function logout() {
     if(confirm('выйти из системы?')) {
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(MUSIC_STATE_KEY); 
+        localStorage.removeItem(MUSIC_STATE_KEY); // Сброс музыки при логауте
         window.location.href = window.location.href.includes('/pages/') ? '../../index.html' : 'index.html';
     }
 }
@@ -244,6 +277,7 @@ function copyToClipboard(elementId) {
     navigator.clipboard.writeText(text).then(() => alert('скопировано!'));
 }
 
+// --- DISCORD AUTH ---
 async function checkDiscordAuth() {
     const token = localStorage.getItem(DISCORD_TOKEN_KEY);
     if (!token) {
