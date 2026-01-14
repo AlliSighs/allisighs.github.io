@@ -1,6 +1,3 @@
-════════════════════════════════════════
-ФАЙЛ: C:\Users\AlliSighs\Desktop\AlliSighs Tools\altoolsupd\js\main.js
-════════════════════════════════════════
 
 (function() {
     let link = document.querySelector("link[rel~='icon']");
