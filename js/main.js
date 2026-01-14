@@ -111,7 +111,7 @@
 const STORAGE_KEY = 'allisighs_local_user';
 const DISCORD_TOKEN_KEY = 'allisighs_discord_token';
 const DISCORD_USER_KEY = 'allisighs_discord_user_cache';
-const MUSIC_URL = "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg";
+const MUSIC_URL = "https://zvukipro.com/uploads/files/2020-05/1588413238_kevin-macleod-8bit-dungeon-level.mp3";
 const MUSIC_STATE_KEY = 'allisighs_music_state'; 
 
 tailwind.config = {
