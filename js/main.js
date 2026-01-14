@@ -1,29 +1,25 @@
 (function() {
-    // 1. Иконка (Умный поиск пути)
+    window.getAssetsPrefix = function() {
+        const cssLink = document.querySelector('link[href*="css/style.css"]');
+        if (cssLink) {
+            return cssLink.getAttribute('href').replace('css/style.css', '');
+        }
+        if (window.location.pathname.includes('/pages/')) {
+            return '../../';
+        }
+        return '';
+    };
+
+    let prefix = window.getAssetsPrefix();
+
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
         link = document.createElement('link');
         link.rel = 'icon';
         document.head.appendChild(link);
     }
-    
-    let prefix = '';
-    // Ищем assets относительно CSS файла, это самый надежный способ
-    const cssLink = document.querySelector('link[href*="css/style.css"]');
-    if (cssLink) {
-        const cssPath = cssLink.getAttribute('href');
-        prefix = cssPath.replace('css/style.css', '');
-    } else if (window.location.pathname.includes('/pages/')) {
-        // Фоллбек, если css не найден
-        prefix = '../../';
-        if (window.location.pathname.includes('/discord/') || window.location.pathname.includes('/minecraft/') || window.location.pathname.includes('/utils/')) {
-             prefix = '../../../';
-        }
-    }
-    
     link.href = prefix + 'assets/siteicon.png';
 
-    // 2. Инициализация языка
     function initLanguageSwitcher() {
         if (!document.getElementById('google-script')) {
             const s = document.createElement('script');
@@ -51,6 +47,9 @@
         function createLangButtons() {
             const container = document.createElement('div');
             container.className = 'lang-switcher-container';
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.zIndex = '60'; 
             
             container.innerHTML = `
                 <button class="lang-btn ${!isEn ? 'active' : ''}" id="btn-ru">RU</button>
@@ -58,7 +57,7 @@
             `;
 
             container.querySelector('#btn-ru').onclick = (e) => {
-                e.preventDefault();
+                e.preventDefault(); e.stopPropagation();
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + window.location.hostname;
                 localStorage.removeItem('as_geo_checked');
@@ -66,37 +65,35 @@
             };
 
             container.querySelector('#btn-en').onclick = (e) => {
-                e.preventDefault();
+                e.preventDefault(); e.stopPropagation();
                 document.cookie = "googtrans=/ru/en; path=/";
                 localStorage.setItem('as_geo_checked', '1');
                 location.reload();
             };
-
             return container;
         }
 
-        // Вставка кнопок языка
         const authScreen = document.getElementById('auth-screen');
         if (authScreen && !authScreen.querySelector('.lang-switcher-container')) {
-            const btns = createLangButtons();
-            authScreen.appendChild(btns);
+            authScreen.appendChild(createLangButtons());
         }
 
-        // Логика поиска хедера для языка (универсальная)
         const header = document.querySelector('header');
-        if (header && !header.querySelector('.lang-switcher-container')) {
-            const btns = createLangButtons();
-            const rightBlock = header.querySelector('.flex.items-center.gap-3:last-child');
+        if (header) {
+            let toolsRight = header.querySelector('.flex.items-center.gap-3:last-child');
             
-            if (rightBlock) {
-                // Обычная страница: вставляем в правый блок
-                rightBlock.insertBefore(btns, rightBlock.firstChild);
+            if (!toolsRight) {
+                const lastItem = header.lastElementChild;
+                if (lastItem && !header.querySelector('.lang-switcher-container')) {
+                    const btns = createLangButtons();
+                    btns.style.marginRight = '15px';
+                    header.insertBefore(btns, lastItem);
+                }
             } else {
-                // Портфолио: вставляем перед последним элементом (кнопкой выхода)
-                const lastEl = header.lastElementChild;
-                if(lastEl) {
-                    header.insertBefore(btns, lastEl);
-                    btns.style.marginRight = '10px'; // Отступ для портфолио
+                if (!toolsRight.querySelector('.lang-switcher-container')) {
+                    const btns = createLangButtons();
+                    btns.style.marginRight = '10px';
+                    toolsRight.insertBefore(btns, toolsRight.firstChild);
                 }
             }
         }
@@ -109,11 +106,9 @@
     }
 })();
 
-// --- CONFIG ---
 const STORAGE_KEY = 'allisighs_local_user';
 const DISCORD_TOKEN_KEY = 'allisighs_discord_token';
 const DISCORD_USER_KEY = 'allisighs_discord_user_cache';
-const MUSIC_URL = "https://zvukipro.com/uploads/files/2020-05/1588413238_kevin-macleod-8bit-dungeon-level.mp3"; 
 const MUSIC_STATE_KEY = 'allisighs_music_state'; 
 
 tailwind.config = {
@@ -130,57 +125,59 @@ tailwind.config = {
     }
 }
 
-// --- INIT ---
 window.addEventListener('load', () => {
     const loader = document.getElementById('system-loader');
     if(loader) setTimeout(() => { loader.classList.add('hidden-screen'); }, 800);
     
-    // Auth Check
-    const savedName = localStorage.getItem(STORAGE_KEY);
-    const authScreen = document.getElementById('auth-screen');
-    const userGreeting = document.getElementById('user-greeting');
-    const heroName = document.getElementById('hero-name');
+    if (document.getElementById('auth-screen')) {
+        const savedName = localStorage.getItem(STORAGE_KEY);
+        const authScreen = document.getElementById('auth-screen');
+        const userGreeting = document.getElementById('user-greeting');
+        const heroName = document.getElementById('hero-name');
 
-    if (savedName) {
-        if(authScreen) authScreen.style.display = 'none';
-        if(userGreeting) userGreeting.textContent = savedName;
-        if(heroName) heroName.textContent = savedName;
-        const appContent = document.getElementById('app-content');
-        if(appContent) appContent.classList.remove('opacity-0');
-    } else {
-        // Если мы НЕ в портфолио, требуем вход
-        if(!window.location.pathname.includes('portfolio') && authScreen) {
-             authScreen.style.display = 'flex';
-        } else if (!window.location.pathname.includes('index.html') && !window.location.pathname.includes('portfolio')) {
-             // Редирект с внутренних страниц
-             window.location.href = '../../index.html';
+        if (savedName) {
+            if(authScreen) authScreen.style.display = 'none';
+            if(userGreeting) userGreeting.textContent = savedName;
+            if(heroName) heroName.textContent = savedName;
+            const appContent = document.getElementById('app-content');
+            if(appContent) appContent.classList.remove('opacity-0');
+        } else {
+            if(authScreen) {
+                authScreen.style.display = 'flex';
+            } else if(!window.location.href.includes('index.html')) {
+                window.location.href = window.getAssetsPrefix() + 'index.html'; 
+            }
         }
     }
 
     if(document.getElementById('discord-auth-overlay')) {
         checkDiscordAuth();
     }
-    
-    // Запуск музыки
     initMusicPlayer();
 });
 
-// --- MUSIC PLAYER (FIXED) ---
 function initMusicPlayer() {
-    // Проверка дублей
-    if(document.querySelector('.music-trigger')) return;
-
     const header = document.querySelector('header');
     if (!header) return;
 
-    // Создаем кнопку
-    const btn = document.createElement('button');
-    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors group z-[100]";
-    btn.title = "music: on/off";
-    // Добавляем отступы, чтобы не прилипало
-    btn.style.marginRight = "15px";
-    btn.style.marginLeft = "15px";
+    let container = header.querySelector('.flex.items-center.gap-3:last-child');
+    let isPortfolio = false;
+
+    if (!container) {
+        container = header;
+        isPortfolio = true;
+    }
     
+    if(document.querySelector('.music-trigger')) return;
+
+    const btn = document.createElement('button');
+    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors group";
+    btn.style.zIndex = "100";
+    btn.style.cursor = "pointer";
+    btn.style.position = "relative";
+    btn.style.marginRight = "15px";
+    
+    btn.title = "music: on/off";
     btn.innerHTML = `
         <span class="material-symbols-rounded text-[24px] music-icon">music_note</span>
         <div class="music-notes-container">
@@ -188,60 +185,55 @@ function initMusicPlayer() {
             <span class="material-symbols-rounded pixel-note note-2">music_note</span>
         </div>
     `;
-
-    // --- ЛОГИКА ВСТАВКИ (FIXED) ---
-    // 1. Ищем правый блок инструментов (div с gap-3)
-    const toolsRight = header.querySelector('.flex.items-center.gap-3:last-child');
     
-    if (toolsRight) {
-        // Это страница инструментов -> вставляем внутрь блока
-        // Ищем переключатель языка внутри
-        const langSwitch = toolsRight.querySelector('.lang-switcher-container');
-        if (langSwitch) {
-            toolsRight.insertBefore(btn, langSwitch.nextSibling);
+    const langContainer = header.querySelector('.lang-switcher-container');
+
+    if (isPortfolio) {
+        if (langContainer) {
+             langContainer.parentNode.insertBefore(btn, langContainer.nextSibling);
         } else {
-            toolsRight.insertBefore(btn, toolsRight.firstChild);
+             container.insertBefore(btn, container.lastElementChild);
         }
-        btn.style.marginRight = "15px"; // margin внутри flex
-        btn.style.marginLeft = "0";
     } else {
-        // Это Портфолио (там нет gap-3 справа, там ссылка <a>) -> вставляем ПЕРЕД последним элементом
-        const lastEl = header.lastElementChild;
-        if (lastEl) {
-            header.insertBefore(btn, lastEl);
+        if (langContainer && container.contains(langContainer)) {
+            container.insertBefore(btn, langContainer.nextSibling);
         } else {
-            header.appendChild(btn);
+            container.insertBefore(btn, container.firstChild);
         }
     }
 
-    // Аудио логика
-    const audio = new Audio(MUSIC_URL);
+    const prefix = window.getAssetsPrefix ? window.getAssetsPrefix() : '';
+    const audio = new Audio(prefix + "assets/music.mp3");
+    
     audio.loop = true;
     audio.volume = 0.3;
 
-    // Восстановление состояния
     let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
-    audio.currentTime = savedState.currentTime;
+    
+    if (Number.isFinite(savedState.currentTime)) {
+        audio.currentTime = savedState.currentTime;
+    }
 
-    const togglePlay = () => {
+    const togglePlay = async (e) => {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        
         if(audio.paused) {
-            const p = audio.play();
-            if (p) {
-                p.then(() => {
-                    btn.classList.add('music-playing');
-                    btn.querySelector('.music-icon').innerText = 'volume_up';
-                    btn.style.color = '#ccff00';
-                }).catch(e => {
-                    console.log("Autoplay blocked", e);
-                    btn.classList.add('animate-pulse'); // Подсказка юзеру нажать
-                });
+            try {
+                btn.classList.add('animate-pulse');
+                await audio.play();
+                btn.classList.remove('animate-pulse');
+                btn.classList.add('music-playing');
+                btn.querySelector('.music-icon').innerText = 'volume_up';
+                btn.style.color = '#ccff00';
+            } catch (err) {
+                console.error("Music Error:", err);
+                btn.classList.remove('animate-pulse');
             }
         } else {
             audio.pause();
             btn.classList.remove('music-playing');
             btn.querySelector('.music-icon').innerText = 'music_note';
             btn.style.color = '';
-            btn.classList.remove('animate-pulse');
         }
     };
 
@@ -249,10 +241,7 @@ function initMusicPlayer() {
         togglePlay();
     }
 
-    btn.onclick = (e) => {
-        e.preventDefault(); // Чтобы не переходило по ссылкам если вдруг
-        togglePlay();
-    };
+    btn.onclick = togglePlay;
 
     window.addEventListener('beforeunload', () => {
         localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({
@@ -264,12 +253,13 @@ function initMusicPlayer() {
     setInterval(() => {
         if(audio.paused) {
             btn.classList.add('music-beckon');
-            setTimeout(() => { btn.classList.remove('music-beckon'); }, 4000);
+            setTimeout(() => {
+                btn.classList.remove('music-beckon');
+            }, 4000);
         }
     }, 15000);
 }
 
-// --- SYSTEM FUNCTIONS ---
 function register(event) {
     event.preventDefault();
     const input = document.getElementById('nickname-input');
@@ -289,7 +279,7 @@ function logout() {
     if(confirm('выйти из системы?')) {
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(MUSIC_STATE_KEY); 
-        window.location.href = window.location.href.includes('pages') ? '../../index.html' : 'index.html';
+        window.location.href = (window.getAssetsPrefix ? window.getAssetsPrefix() : '') + 'index.html';
     }
 }
 
