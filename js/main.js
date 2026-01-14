@@ -1,4 +1,3 @@
-
 (function() {
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
@@ -6,7 +5,15 @@
         link.rel = 'icon';
         document.head.appendChild(link);
     }
-    const prefix = window.location.pathname.includes('/pages/') ? '../../' : '';
+    
+    let prefix = '';
+    const cssLink = document.querySelector('link[href*="css/style.css"]');
+    if (cssLink) {
+        prefix = cssLink.getAttribute('href').replace('css/style.css', '');
+    } else if (window.location.pathname.includes('/pages/')) {
+        prefix = '../../';
+    }
+    
     link.href = prefix + 'assets/siteicon.png';
 
     function initLanguageSwitcher() {
@@ -81,7 +88,9 @@
         const portfolioBtn = document.querySelector('header a[href*="index.html"]');
         if (portfolioBtn && !document.querySelector('header .lang-switcher-container')) {
             const btns = createLangButtons();
-            portfolioBtn.parentElement.insertBefore(btns, portfolioBtn);
+            if(portfolioBtn.parentElement) {
+                portfolioBtn.parentElement.insertBefore(btns, portfolioBtn);
+            }
             return;
         }
 
@@ -102,7 +111,7 @@
 const STORAGE_KEY = 'allisighs_local_user';
 const DISCORD_TOKEN_KEY = 'allisighs_discord_token';
 const DISCORD_USER_KEY = 'allisighs_discord_user_cache';
-const MUSIC_URL = "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Kevin_MacLeod/Impact/Kevin_MacLeod_-_8bit_Dungeon_Level.mp3";
+const MUSIC_URL = "https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg";
 const MUSIC_STATE_KEY = 'allisighs_music_state'; 
 
 tailwind.config = {
@@ -137,7 +146,7 @@ window.addEventListener('load', () => {
         if(authScreen) {
             authScreen.style.display = 'flex';
         } else if(!window.location.href.includes('index.html')) {
-            window.location.href = '../../index.html';
+            window.location.href = window.location.href.includes('/pages/') ? '../../index.html' : 'index.html';
         }
     }
 
@@ -173,26 +182,29 @@ function initMusicPlayer() {
         headerRight.insertBefore(btn, headerRight.firstChild);
     }
 
-    const audio = new Audio(MUSIC_URL);
+    const audio = new Audio();
+    audio.src = MUSIC_URL;
     audio.loop = true;
     audio.volume = 0.3;
+    audio.load(); 
 
     let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
-    audio.currentTime = savedState.currentTime;
+    if(savedState.currentTime) audio.currentTime = savedState.currentTime;
 
     const togglePlay = async (e) => {
         if(e) e.preventDefault();
         
         if(audio.paused) {
             try {
+                btn.classList.add('animate-pulse');
                 await audio.play();
+                btn.classList.remove('animate-pulse');
                 btn.classList.add('music-playing');
                 btn.querySelector('.music-icon').innerText = 'volume_up';
                 btn.style.color = '#ccff00';
             } catch (err) {
                 console.error("Audio error:", err);
-                btn.classList.add('animate-pulse');
-                setTimeout(() => btn.classList.remove('animate-pulse'), 500);
+                btn.classList.remove('animate-pulse');
             }
         } else {
             audio.pause();
@@ -243,7 +255,7 @@ function logout() {
     if(confirm('выйти из системы?')) {
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(MUSIC_STATE_KEY); 
-        window.location.href = window.location.href.includes('pages') ? '../../index.html' : 'index.html';
+        window.location.href = window.location.href.includes('/pages/') ? '../../index.html' : 'index.html';
     }
 }
 
