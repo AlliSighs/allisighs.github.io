@@ -203,21 +203,25 @@ function initMusicPlayer() {
     }
 
     const prefix = window.getAssetsPrefix ? window.getAssetsPrefix() : '';
-    const audio = new Audio(prefix + "assets/music.mp3");
+    const audioUrl = prefix + "assets/music.mp3";
+    const audio = new Audio(); 
     
     audio.loop = true;
     audio.volume = 0.3;
 
     let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
     
-    if (Number.isFinite(savedState.currentTime)) {
-        audio.currentTime = savedState.currentTime;
-    }
-
     const togglePlay = async (e) => {
         if(e) { e.preventDefault(); e.stopPropagation(); }
         
         if(audio.paused) {
+            if (!audio.src) {
+                audio.src = audioUrl;
+                if (Number.isFinite(savedState.currentTime)) {
+                    audio.currentTime = savedState.currentTime;
+                }
+            }
+
             try {
                 btn.classList.add('animate-pulse');
                 await audio.play();
@@ -238,6 +242,10 @@ function initMusicPlayer() {
     };
 
     if(savedState.isPlaying) {
+        audio.src = audioUrl;
+        if (Number.isFinite(savedState.currentTime)) {
+            audio.currentTime = savedState.currentTime;
+        }
         togglePlay();
     }
 
