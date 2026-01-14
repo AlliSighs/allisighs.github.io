@@ -1,5 +1,5 @@
 (function() {
-    // --- ЛОГИКА ИКОНОК И ПУТЕЙ ---
+    // 1. Иконка (Умный поиск пути)
     let link = document.querySelector("link[rel~='icon']");
     if (!link) {
         link = document.createElement('link');
@@ -8,16 +8,22 @@
     }
     
     let prefix = '';
+    // Ищем assets относительно CSS файла, это самый надежный способ
     const cssLink = document.querySelector('link[href*="css/style.css"]');
     if (cssLink) {
-        prefix = cssLink.getAttribute('href').replace('css/style.css', '');
+        const cssPath = cssLink.getAttribute('href');
+        prefix = cssPath.replace('css/style.css', '');
     } else if (window.location.pathname.includes('/pages/')) {
+        // Фоллбек, если css не найден
         prefix = '../../';
+        if (window.location.pathname.includes('/discord/') || window.location.pathname.includes('/minecraft/') || window.location.pathname.includes('/utils/')) {
+             prefix = '../../../';
+        }
     }
     
     link.href = prefix + 'assets/siteicon.png';
 
-    // --- ЛОГИКА ПЕРЕВОДЧИКА (GOOGLE TRANSLATE) ---
+    // 2. Инициализация языка
     function initLanguageSwitcher() {
         if (!document.getElementById('google-script')) {
             const s = document.createElement('script');
@@ -40,23 +46,11 @@
             }, 'google_translate_element');
         };
 
-        const observer = new MutationObserver((mutations) => {
-            const badFrames = document.querySelectorAll('.skiptranslate, iframe[id*=":1.container"]');
-            if (badFrames.length > 0) {
-                badFrames.forEach(el => el.remove());
-                document.body.style.top = "0px";
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-
         const isEn = document.cookie.includes('googtrans=/ru/en');
 
         function createLangButtons() {
             const container = document.createElement('div');
             container.className = 'lang-switcher-container';
-            container.style.marginRight = '12px';
-            container.style.marginLeft = '12px';
-            container.style.zIndex = '100';
             
             container.innerHTML = `
                 <button class="lang-btn ${!isEn ? 'active' : ''}" id="btn-ru">RU</button>
@@ -81,25 +75,30 @@
             return container;
         }
 
+        // Вставка кнопок языка
         const authScreen = document.getElementById('auth-screen');
         if (authScreen && !authScreen.querySelector('.lang-switcher-container')) {
             const btns = createLangButtons();
             authScreen.appendChild(btns);
         }
 
-        const portfolioBtn = document.querySelector('header a[href*="index.html"]');
-        if (portfolioBtn && !document.querySelector('header .lang-switcher-container')) {
+        // Логика поиска хедера для языка (универсальная)
+        const header = document.querySelector('header');
+        if (header && !header.querySelector('.lang-switcher-container')) {
             const btns = createLangButtons();
-            if(portfolioBtn.parentElement) {
-                portfolioBtn.parentElement.insertBefore(btns, portfolioBtn);
+            const rightBlock = header.querySelector('.flex.items-center.gap-3:last-child');
+            
+            if (rightBlock) {
+                // Обычная страница: вставляем в правый блок
+                rightBlock.insertBefore(btns, rightBlock.firstChild);
+            } else {
+                // Портфолио: вставляем перед последним элементом (кнопкой выхода)
+                const lastEl = header.lastElementChild;
+                if(lastEl) {
+                    header.insertBefore(btns, lastEl);
+                    btns.style.marginRight = '10px'; // Отступ для портфолио
+                }
             }
-            return;
-        }
-
-        let toolsHeaderRight = document.querySelector('header .flex.items-center.gap-3:last-child');
-        if (toolsHeaderRight && !toolsHeaderRight.querySelector('.lang-switcher-container')) {
-            const btns = createLangButtons();
-            toolsHeaderRight.insertBefore(btns, toolsHeaderRight.firstChild);
         }
     }
 
@@ -110,11 +109,11 @@
     }
 })();
 
-// --- КОНСТАНТЫ ---
+// --- CONFIG ---
 const STORAGE_KEY = 'allisighs_local_user';
 const DISCORD_TOKEN_KEY = 'allisighs_discord_token';
 const DISCORD_USER_KEY = 'allisighs_discord_user_cache';
-const MUSIC_URL = "https://zvukipro.com/uploads/files/2020-05/1588413238_kevin-macleod-8bit-dungeon-level.mp3";
+const MUSIC_URL = "https://cdn.pixabay.com/audio/2022/03/24/audio_341b439502.mp3"; 
 const MUSIC_STATE_KEY = 'allisighs_music_state'; 
 
 tailwind.config = {
@@ -131,10 +130,12 @@ tailwind.config = {
     }
 }
 
-// --- INIT APP ---
+// --- INIT ---
 window.addEventListener('load', () => {
     const loader = document.getElementById('system-loader');
     if(loader) setTimeout(() => { loader.classList.add('hidden-screen'); }, 800);
+    
+    // Auth Check
     const savedName = localStorage.getItem(STORAGE_KEY);
     const authScreen = document.getElementById('auth-screen');
     const userGreeting = document.getElementById('user-greeting');
@@ -147,33 +148,39 @@ window.addEventListener('load', () => {
         const appContent = document.getElementById('app-content');
         if(appContent) appContent.classList.remove('opacity-0');
     } else {
-        if(authScreen) {
-            authScreen.style.display = 'flex';
-        } else if(!window.location.href.includes('index.html')) {
-            // Исправлен путь редиректа
-            window.location.href = window.location.href.includes('/pages/') ? '../../index.html' : 'index.html';
+        // Если мы НЕ в портфолио, требуем вход
+        if(!window.location.pathname.includes('portfolio') && authScreen) {
+             authScreen.style.display = 'flex';
+        } else if (!window.location.pathname.includes('index.html') && !window.location.pathname.includes('portfolio')) {
+             // Редирект с внутренних страниц
+             window.location.href = '../../index.html';
         }
     }
 
     if(document.getElementById('discord-auth-overlay')) {
         checkDiscordAuth();
     }
+    
+    // Запуск музыки
     initMusicPlayer();
 });
 
-// --- ИСПРАВЛЕННЫЙ МУЗЫКАЛЬНЫЙ ПЛЕЕР (SEAMLESS) ---
+// --- MUSIC PLAYER (FIXED) ---
 function initMusicPlayer() {
-    const headerRight = document.querySelector('header .flex.items-center.gap-3:last-child');
-    if(!headerRight) return;
-    
+    // Проверка дублей
     if(document.querySelector('.music-trigger')) return;
 
-    // Создание кнопки
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    // Создаем кнопку
     const btn = document.createElement('button');
-    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group z-50";
+    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors group z-[100]";
     btn.title = "music: on/off";
-    btn.style.zIndex = "100";
-    btn.style.cursor = "pointer";
+    // Добавляем отступы, чтобы не прилипало
+    btn.style.marginRight = "15px";
+    btn.style.marginLeft = "15px";
+    
     btn.innerHTML = `
         <span class="material-symbols-rounded text-[24px] music-icon">music_note</span>
         <div class="music-notes-container">
@@ -181,54 +188,72 @@ function initMusicPlayer() {
             <span class="material-symbols-rounded pixel-note note-2">music_note</span>
         </div>
     `;
+
+    // --- ЛОГИКА ВСТАВКИ (FIXED) ---
+    // 1. Ищем правый блок инструментов (div с gap-3)
+    const toolsRight = header.querySelector('.flex.items-center.gap-3:last-child');
     
-    // Вставка кнопки (с учетом переводчика)
-    const langContainer = headerRight.querySelector('.lang-switcher-container');
-    if (langContainer) {
-        headerRight.insertBefore(btn, langContainer.nextSibling);
+    if (toolsRight) {
+        // Это страница инструментов -> вставляем внутрь блока
+        // Ищем переключатель языка внутри
+        const langSwitch = toolsRight.querySelector('.lang-switcher-container');
+        if (langSwitch) {
+            toolsRight.insertBefore(btn, langSwitch.nextSibling);
+        } else {
+            toolsRight.insertBefore(btn, toolsRight.firstChild);
+        }
+        btn.style.marginRight = "15px"; // margin внутри flex
+        btn.style.marginLeft = "0";
     } else {
-        headerRight.insertBefore(btn, headerRight.firstChild);
+        // Это Портфолио (там нет gap-3 справа, там ссылка <a>) -> вставляем ПЕРЕД последним элементом
+        const lastEl = header.lastElementChild;
+        if (lastEl) {
+            header.insertBefore(btn, lastEl);
+        } else {
+            header.appendChild(btn);
+        }
     }
 
+    // Аудио логика
     const audio = new Audio(MUSIC_URL);
     audio.loop = true;
     audio.volume = 0.3;
 
-    // ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ (КЛЮЧЕВОЙ МОМЕНТ)
+    // Восстановление состояния
     let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
     audio.currentTime = savedState.currentTime;
 
-    const togglePlay = async (e) => {
-        if(e) e.preventDefault();
-        
+    const togglePlay = () => {
         if(audio.paused) {
-            try {
-                btn.classList.add('animate-pulse');
-                await audio.play();
-                btn.classList.remove('animate-pulse');
-                btn.classList.add('music-playing');
-                btn.querySelector('.music-icon').innerText = 'volume_up';
-                btn.style.color = '#ccff00';
-            } catch (err) {
-                console.error("Audio play error:", err);
-                btn.classList.remove('animate-pulse');
+            const p = audio.play();
+            if (p) {
+                p.then(() => {
+                    btn.classList.add('music-playing');
+                    btn.querySelector('.music-icon').innerText = 'volume_up';
+                    btn.style.color = '#ccff00';
+                }).catch(e => {
+                    console.log("Autoplay blocked", e);
+                    btn.classList.add('animate-pulse'); // Подсказка юзеру нажать
+                });
             }
         } else {
             audio.pause();
             btn.classList.remove('music-playing');
             btn.querySelector('.music-icon').innerText = 'music_note';
             btn.style.color = '';
+            btn.classList.remove('animate-pulse');
         }
     };
 
-    // Автостарт, если музыка играла до перезагрузки
     if(savedState.isPlaying) {
         togglePlay();
     }
 
-    btn.onclick = togglePlay;
+    btn.onclick = (e) => {
+        e.preventDefault(); // Чтобы не переходило по ссылкам если вдруг
+        togglePlay();
+    };
 
-    // СОХРАНЕНИЕ СОСТОЯНИЯ ПРИ УХОДЕ СО СТРАНИЦЫ
     window.addEventListener('beforeunload', () => {
         localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({
             isPlaying: !audio.paused,
@@ -236,18 +261,15 @@ function initMusicPlayer() {
         }));
     });
 
-    // Анимация зазывания
     setInterval(() => {
         if(audio.paused) {
             btn.classList.add('music-beckon');
-            setTimeout(() => {
-                btn.classList.remove('music-beckon');
-            }, 4000);
+            setTimeout(() => { btn.classList.remove('music-beckon'); }, 4000);
         }
     }, 15000);
 }
 
-// --- USER FUNCTIONS ---
+// --- SYSTEM FUNCTIONS ---
 function register(event) {
     event.preventDefault();
     const input = document.getElementById('nickname-input');
@@ -266,8 +288,8 @@ function loginAnon() {
 function logout() {
     if(confirm('выйти из системы?')) {
         localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(MUSIC_STATE_KEY); // Сброс музыки при логауте
-        window.location.href = window.location.href.includes('/pages/') ? '../../index.html' : 'index.html';
+        localStorage.removeItem(MUSIC_STATE_KEY); 
+        window.location.href = window.location.href.includes('pages') ? '../../index.html' : 'index.html';
     }
 }
 
@@ -277,7 +299,6 @@ function copyToClipboard(elementId) {
     navigator.clipboard.writeText(text).then(() => alert('скопировано!'));
 }
 
-// --- DISCORD AUTH ---
 async function checkDiscordAuth() {
     const token = localStorage.getItem(DISCORD_TOKEN_KEY);
     if (!token) {
@@ -302,8 +323,10 @@ async function checkDiscordAuth() {
 
 function showDiscordAuth() {
     const el = document.getElementById('discord-auth-overlay');
-    el.classList.remove('hidden');
-    el.style.display = 'flex';
+    if(el) {
+        el.classList.remove('hidden');
+        el.style.display = 'flex';
+    }
 }
 
 async function submitDiscordToken() {
