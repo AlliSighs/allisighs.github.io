@@ -159,14 +159,9 @@ window.addEventListener('load', () => {
 function initMusicPlayer() {
     const headerRight = document.querySelector('header .flex.items-center.gap-3:last-child');
     if(!headerRight) return;
-    
-    if(document.querySelector('.music-trigger')) return;
-
     const btn = document.createElement('button');
-    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group z-50";
+    btn.className = "music-trigger relative text-gray-500 hover:text-white transition-colors mr-4 group";
     btn.title = "music: on/off";
-    btn.style.zIndex = "100";
-    btn.style.cursor = "pointer";
     btn.innerHTML = `
         <span class="material-symbols-rounded text-[24px] music-icon">music_note</span>
         <div class="music-notes-container">
@@ -175,42 +170,40 @@ function initMusicPlayer() {
         </div>
     `;
     
-    const langContainer = headerRight.querySelector('.lang-switcher-container');
-    if (langContainer) {
-        headerRight.insertBefore(btn, langContainer.nextSibling);
-    } else {
-        headerRight.insertBefore(btn, headerRight.firstChild);
-    }
+    headerRight.insertBefore(btn, headerRight.firstChild);
 
-    const audio = new Audio();
-    audio.src = MUSIC_URL;
+    const audio = new Audio(MUSIC_URL);
     audio.loop = true;
     audio.volume = 0.3;
 
-    const togglePlay = async (e) => {
-        if(e) e.preventDefault();
-        
+    // Восстановление состояния
+    let savedState = JSON.parse(localStorage.getItem(MUSIC_STATE_KEY) || '{"isPlaying": false, "currentTime": 0}');
+    audio.currentTime = savedState.currentTime;
+
+    const togglePlay = () => {
         if(audio.paused) {
-            try {
-                btn.classList.add('animate-pulse');
-                await audio.play();
-                btn.classList.remove('animate-pulse');
+            audio.play().then(() => {
                 btn.classList.add('music-playing');
                 btn.querySelector('.music-icon').innerText = 'volume_up';
-                btn.style.color = '#ccff00';
-            } catch (err) {
-                console.error("Audio play error:", err);
-                btn.classList.remove('animate-pulse');
-            }
+            }).catch(e => console.log("Autoplay blocked", e));
         } else {
             audio.pause();
             btn.classList.remove('music-playing');
             btn.querySelector('.music-icon').innerText = 'music_note';
-            btn.style.color = '';
         }
     };
 
+    if(savedState.isPlaying) {
+        togglePlay();
+    }
+
     btn.onclick = togglePlay;
+    window.addEventListener('beforeunload', () => {
+        localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify({
+            isPlaying: !audio.paused,
+            currentTime: audio.currentTime
+        }));
+    });
 
     setInterval(() => {
         if(audio.paused) {
