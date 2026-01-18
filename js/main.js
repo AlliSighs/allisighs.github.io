@@ -383,3 +383,20 @@ function logoutDiscord() {
     localStorage.removeItem(DISCORD_USER_KEY);
     location.reload();
 }
+
+window.downloadCdnFile = async (url) => {
+    const proxy = "https://corsproxy.io/?"; 
+    
+    if (!url.includes('cdn.discordapp.com') && !url.includes('media.discordapp.net')) {
+        const res = await fetch(url);
+        return await res.blob();
+    }
+
+    try {
+        const res = await fetch(proxy + encodeURIComponent(url));
+        if (!res.ok) throw new Error('Proxy Error');
+        return await res.blob();
+    } catch (e) {
+        throw e;
+    }
+};
