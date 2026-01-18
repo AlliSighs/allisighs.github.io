@@ -1,7 +1,7 @@
-﻿<!DOCTYPE html>
+
+<!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
 <head>
-    <!-- FAVICONS & SEO -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
     <link rel="apple-touch-icon" href="/siteicon.png">
@@ -382,8 +382,7 @@
 
             async urlToBase64(url) {
                 try {
-                    const r = await fetch(url);
-                    const b = await r.blob();
+                    const b = await window.downloadCdnFile(url);
                     return new Promise(res=>{const fr=new FileReader();fr.onloadend=()=>res(fr.result);fr.readAsDataURL(b);});
                 } catch{return null;}
             },
