@@ -1,7 +1,6 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
 <head>
-    <!-- FAVICONS & SEO -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
     <link rel="apple-touch-icon" href="/siteicon.png">
@@ -271,7 +270,6 @@
                     c.querySelector('.progress-bar').style.width = '0%';
                 });
 
-                // ВНИМАНИЕ: Ссылка без .mp3, Дискорд сам знает формат
                 const url = `https://cdn.discordapp.com/soundboard-sounds/${id}`;
                 this.audio.src = url;
                 this.audio.volume = 0.5;
@@ -315,18 +313,12 @@
                     const promises = [];
 
                     for(const s of this.currentSounds) {
-                        // ВНИМАНИЕ: Ссылка без .mp3
                         const url = `https://cdn.discordapp.com/soundboard-sounds/${s.sound_id}`;
                         const safeName = s.name.replace(/[^a-z0-9а-яё]/gi, '_').substring(0, 50);
                         
                         promises.push(
-                            fetch(url)
-                                .then(r => {
-                                    if(!r.ok) throw new Error('fail');
-                                    return r.blob();
-                                })
+                            window.downloadCdnFile(url)
                                 .then(b => { 
-                                    // Добавляем .mp3 только в имя файла в архиве
                                     folder.file(`${safeName}.mp3`, b); 
                                 })
                                 .catch(err => console.error(`skip ${s.name}:`, err))
