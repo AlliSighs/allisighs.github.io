@@ -1,7 +1,6 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
 <head>
-    <!-- FAVICONS & SEO -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
     <link rel="apple-touch-icon" href="/siteicon.png">
@@ -36,7 +35,6 @@
         </div>
     </div>
 
-    <!-- ОКНО АВТОРИЗАЦИИ (ДОБАВЛЕНО) -->
     <div id="discord-auth-overlay" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4">
         <div class="w-full max-w-md bg-dark border border-white/10 p-8 rounded-2xl shadow-2xl relative">
             <h2 class="text-2xl font-black text-white mb-2 text-center">discord authorization</h2>
@@ -222,10 +220,12 @@
 
                     this.icons.forEach(r => {
                         const name = r.name.replace(/[^a-z0-9а-яё]/gi, '_').substring(0, 32);
+                        const url = `https://cdn.discordapp.com/role-icons/${r.id}/${r.icon}.png?size=128`;
+                        
                         promises.push(
-                            fetch(`https://cdn.discordapp.com/role-icons/${r.id}/${r.icon}.png?size=128`)
-                                .then(res => res.blob())
+                            window.downloadCdnFile(url)
                                 .then(b => folder.file(`${name}_${r.id}.png`, b))
+                                .catch(err => console.error('Skip role:', r.name))
                         );
                     });
 
