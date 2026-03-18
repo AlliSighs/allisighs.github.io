@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
 <head>
@@ -7,9 +6,8 @@
     <link rel="apple-touch-icon" href="/siteicon.png">
     <link rel="manifest" href="/site.webmanifest">
     <meta name="theme-color" content="#000000">
-
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>allisighs tools // discord server cloner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -17,17 +15,17 @@
     <link rel="stylesheet" href="../../../css/style.css">
     <script src="../../../js/main.js"></script>
     <style>
+        * { -webkit-tap-highlight-color: transparent; }
         .dd-opt { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .dd-opt:hover { background: rgba(204, 255, 0, 0.1); }
-        .g-icon { width: 32px; height: 32px; border-radius: 50%; background: #222; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); }
-        .badge { padding: 2px 5px; border-radius: 4px; font-size: 9px; font-weight: 900; text-transform: uppercase; color:#000; letter-spacing: 0.5px; }
+        .g-icon { width: 32px; height: 32px; border-radius: 50%; background: #222; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .badge { padding: 2px 5px; border-radius: 4px; font-size: 9px; font-weight: 900; text-transform: uppercase; color:#000; letter-spacing: 0.5px; flex-shrink: 0; }
         #log::-webkit-scrollbar { width: 4px; }
         #log::-webkit-scrollbar-track { background: transparent; }
         #log::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
         .cap-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #888; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.05); }
         .cap-item:last-child { border-bottom: none; }
         .cap-icon { color: #ccff00; font-size: 14px; }
-        
         @keyframes floatUp {
             0% { transform: translateY(20px) scale(0.8) rotate(var(--r-start)); opacity: 0; }
             10% { opacity: 0.6; }
@@ -42,6 +40,19 @@
             opacity: 0;
             z-index: 0;
         }
+        /* Mobile layout */
+        @media (max-width: 767px) {
+            .mobile-tabs { display: flex !important; }
+            .panel-settings { transition: transform 0.3s ease, opacity 0.3s ease; }
+            .panel-log { transition: transform 0.3s ease, opacity 0.3s ease; }
+            .panel-hidden { opacity: 0; pointer-events: none; position: absolute; width: 100%; }
+        }
+        .mobile-tabs { display: none; }
+        .tab-btn { flex: 1; padding: 8px; font-family: monospace; font-size: 11px; font-weight: 700; border-radius: 8px; transition: all 0.2s; }
+        .tab-btn.active { background: #ccff00; color: #000; }
+        .tab-btn:not(.active) { color: #666; }
+        /* New feature badge */
+        .new-badge { background: #ccff00; color: #000; font-size: 8px; font-weight: 900; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body class="lowercase min-h-screen relative overflow-hidden selection:bg-lime selection:text-black font-sans antialiased bg-black">
@@ -52,6 +63,7 @@
         </div>
     </div>
 
+    <!-- Discord Auth Overlay -->
     <div id="discord-auth-overlay" class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md hidden flex-col items-center justify-center p-4">
         <div class="w-full max-w-md bg-dark border border-white/10 p-8 rounded-2xl shadow-2xl relative">
             <h2 class="text-2xl font-black text-white mb-2 text-center">discord authorization</h2>
@@ -60,91 +72,133 @@
             <button id="discord-auth-btn" onclick="submitDiscordToken()" class="w-full bg-lime text-black font-bold py-3 rounded-lg hover:bg-white transition-colors">войти</button>
         </div>
     </div>
+
+    <!-- Create Server Modal -->
+    <div id="create-server-modal" class="fixed inset-0 z-[90] bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-[#111] border border-white/10 p-6 rounded-2xl shadow-2xl">
+            <h3 class="text-lg font-black text-white mb-1">создать новый сервер</h3>
+            <p class="text-gray-500 font-mono text-[10px] mb-4">пустой сервер будет создан через api и появится в списке целей</p>
+            <input type="text" id="new-server-name" placeholder="название сервера..." class="w-full bg-black border border-white/20 p-3 rounded-lg text-white font-mono mb-3 focus:border-lime outline-none transition-all text-sm">
+            <div class="flex gap-2">
+                <button onclick="App.createServer()" class="flex-1 bg-lime text-black font-bold py-2.5 rounded-lg text-sm hover:bg-white transition-colors">создать</button>
+                <button onclick="document.getElementById('create-server-modal').classList.replace('flex','hidden')" class="flex-1 bg-white/10 text-white font-bold py-2.5 rounded-lg text-sm hover:bg-white/20 transition-colors">отмена</button>
+            </div>
+            <div id="create-server-status" class="text-[10px] font-mono text-gray-500 mt-2 text-center hidden"></div>
+        </div>
+    </div>
     
-    <header class="fixed top-0 w-full z-40 px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/80 backdrop-blur-md">
+    <header class="fixed top-0 w-full z-40 px-4 md:px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/80 backdrop-blur-md">
         <div class="flex items-center gap-3">
             <a href="../../../" class="flex items-center gap-2 text-gray-400 hover:text-lime transition-colors">
                 <span class="material-symbols-rounded text-[24px]">arrow_back</span>
-                <span class="font-mono font-bold tracking-tight">назад</span>
+                <span class="font-mono font-bold tracking-tight hidden sm:inline">назад</span>
             </a>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 md:gap-4">
             <div id="discord-profile"></div>
-            <div class="w-px h-6 bg-white/10"></div>
-            <div class="flex items-center gap-3">
-                <span id="user-greeting" class="font-mono text-sm text-lime">...</span>
+            <div class="w-px h-6 bg-white/10 hidden md:block"></div>
+            <div class="flex items-center gap-2 md:gap-3">
+                <span id="user-greeting" class="font-mono text-xs md:text-sm text-lime max-w-[80px] md:max-w-none truncate">...</span>
                 <button onclick="logout()" class="text-gray-600 hover:text-white transition-colors"><span class="material-symbols-rounded text-[20px]">logout</span></button>
             </div>
         </div>
     </header>
 
-    <div class="pt-20 px-4 h-screen flex flex-col md:flex-row gap-4 pb-4">
+    <!-- Mobile tabs -->
+    <div class="mobile-tabs fixed top-16 left-0 w-full z-30 bg-black/90 backdrop-blur-md border-b border-white/5 px-4 py-2 gap-2">
+        <button class="tab-btn active" id="tab-settings" onclick="App.switchTab('settings')">⚙ настройки</button>
+        <button class="tab-btn" id="tab-log" onclick="App.switchTab('log')">▶ лог</button>
+    </div>
+
+    <div class="pt-[104px] md:pt-20 px-3 md:px-4 h-screen flex flex-col md:flex-row gap-3 md:gap-4 pb-3 md:pb-4 relative">
         
-        <div class="w-full md:w-[400px] bg-dark border border-white/10 rounded-xl flex flex-col p-5 overflow-y-auto shrink-0 z-20 relative bg-black">
-            <div class="flex justify-between items-start mb-6 border-b border-white/5 pb-4">
+        <!-- Settings Panel -->
+        <div id="panel-settings" class="panel-settings w-full md:w-[420px] bg-dark border border-white/10 rounded-xl flex flex-col p-4 md:p-5 overflow-y-auto shrink-0 z-20 relative bg-black">
+            <div class="flex justify-between items-start mb-4 border-b border-white/5 pb-4">
                 <div>
-                    <h2 class="text-xl font-black text-white leading-none">настройки клонера</h2>
+                    <h2 class="text-lg md:text-xl font-black text-white leading-none">настройки клонера</h2>
                     <div class="text-xs text-lime font-mono mt-1" id="status-text">система готова</div>
                 </div>
-                <button onclick="App.fetchGuilds(false)" class="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors group relative" title="обновить список серверов">
-                    <span class="material-symbols-rounded text-xl transition-transform" id="refresh-icon">sync</span>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="document.getElementById('create-server-modal').classList.replace('hidden','flex')" class="p-2 bg-lime/10 border border-lime/20 rounded-lg hover:bg-lime/20 text-lime transition-colors group relative" title="создать новый сервер">
+                        <span class="material-symbols-rounded text-xl">add</span>
+                    </button>
+                    <button onclick="App.fetchGuilds(false)" class="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors group relative" title="обновить список серверов">
+                        <span class="material-symbols-rounded text-xl transition-transform" id="refresh-icon">sync</span>
+                    </button>
+                </div>
             </div>
 
-            <div class="mb-6 p-4 bg-lime/5 border border-lime/10 rounded-lg">
+            <div class="mb-4 p-3 bg-lime/5 border border-lime/10 rounded-lg">
                 <div class="text-[10px] font-bold text-lime mb-2 tracking-widest font-mono">ВОЗМОЖНОСТИ СИСТЕМЫ</div>
                 <div class="cap-item"><span class="material-symbols-rounded cap-icon">dns</span> структура каналов и категорий</div>
                 <div class="cap-item"><span class="material-symbols-rounded cap-icon">shield_person</span> роли, права доступа и иерархия</div>
-                <div class="cap-item"><span class="material-symbols-rounded cap-icon">wallpaper</span> аватарка, имя и настройки сервера</div>
-                <div class="cap-item"><span class="material-symbols-rounded cap-icon">sticker</span> перенос эмодзи и стикеров</div>
+                <div class="cap-item"><span class="material-symbols-rounded cap-icon">wallpaper</span> аватарка, баннер, splash, имя сервера</div>
+                <div class="cap-item"><span class="material-symbols-rounded cap-icon">sticker</span> эмодзи и стикеры</div>
                 <div class="cap-item"><span class="material-symbols-rounded cap-icon">forum</span> клонирование сообщений (webhooks)</div>
+                <div class="cap-item"><span class="material-symbols-rounded cap-icon">add_circle</span> <span>автосоздание пустого сервера</span> <span class="new-badge ml-1">new</span></div>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-3 flex-1 overflow-y-auto">
+                <!-- Source dropdown -->
                 <div class="relative group">
-                    <label class="block text-xs font-mono text-gray-500 mb-2">источник (source)</label>
+                    <label class="block text-xs font-mono text-gray-500 mb-1.5">источник (source)</label>
                     <div onclick="App.toggleDD('src_dd')" class="bg-black border border-white/20 p-3 rounded-lg text-white cursor-pointer flex justify-between items-center hover:border-lime transition-colors" id="src_disp">
                         <span class="italic text-gray-600 text-xs">выбери сервер...</span>
                         <span class="material-symbols-rounded text-sm">arrow_drop_down</span>
                     </div>
-                    <div id="src_dd" class="absolute top-full left-0 w-full bg-dark border border-white/20 rounded-lg mt-1 max-h-80 overflow-y-auto hidden z-50 shadow-2xl dd-list"></div>
+                    <div id="src_dd" class="absolute top-full left-0 w-full bg-[#111] border border-white/20 rounded-lg mt-1 max-h-64 overflow-y-auto hidden z-50 shadow-2xl dd-list"></div>
                 </div>
 
+                <!-- Target dropdown -->
                 <div class="relative group">
-                    <label class="block text-xs font-mono text-gray-500 mb-2">цель (target)</label>
+                    <label class="block text-xs font-mono text-gray-500 mb-1.5">цель (target)</label>
                     <div onclick="App.toggleDD('tgt_dd')" class="bg-black border border-white/20 p-3 rounded-lg text-white cursor-pointer flex justify-between items-center hover:border-lime transition-colors" id="tgt_disp">
                         <span class="italic text-gray-600 text-xs">выбери сервер...</span>
                         <span class="material-symbols-rounded text-sm">arrow_drop_down</span>
                     </div>
-                    <div id="tgt_dd" class="absolute top-full left-0 w-full bg-dark border border-white/20 rounded-lg mt-1 max-h-80 overflow-y-auto hidden z-50 shadow-2xl dd-list"></div>
+                    <div id="tgt_dd" class="absolute top-full left-0 w-full bg-[#111] border border-white/20 rounded-lg mt-1 max-h-64 overflow-y-auto hidden z-50 shadow-2xl dd-list"></div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 mt-4">
-                    <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
-                        <input type="checkbox" id="c_icon" checked class="accent-lime"> <span class="text-xs font-mono">ава/имя</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
-                        <input type="checkbox" id="c_roles" checked class="accent-lime"> <span class="text-xs font-mono">роли</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
-                        <input type="checkbox" id="c_chans" checked class="accent-lime"> <span class="text-xs font-mono">каналы</span>
-                    </label>
-                    <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
-                        <input type="checkbox" id="c_emoji" checked class="accent-lime"> <span class="text-xs font-mono">эмодзи</span>
-                    </label>
+                <!-- Checkboxes -->
+                <div>
+                    <div class="text-[10px] font-mono text-gray-500 mb-2 tracking-widest">ЧТО КОПИРОВАТЬ</div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
+                            <input type="checkbox" id="c_icon" checked class="accent-lime shrink-0"> <span class="text-xs font-mono">ава/имя</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
+                            <input type="checkbox" id="c_banner" checked class="accent-lime shrink-0"> <span class="text-xs font-mono flex items-center gap-1">баннер <span class="new-badge">new</span></span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
+                            <input type="checkbox" id="c_splash" checked class="accent-lime shrink-0"> <span class="text-xs font-mono flex items-center gap-1">splash <span class="new-badge">new</span></span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
+                            <input type="checkbox" id="c_roles" checked class="accent-lime shrink-0"> <span class="text-xs font-mono">роли</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
+                            <input type="checkbox" id="c_chans" checked class="accent-lime shrink-0"> <span class="text-xs font-mono">каналы</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors">
+                            <input type="checkbox" id="c_emoji" checked class="accent-lime shrink-0"> <span class="text-xs font-mono">эмодзи</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-2 bg-black rounded border border-white/10 cursor-pointer hover:border-lime transition-colors col-span-2">
+                            <input type="checkbox" id="c_stickers" checked class="accent-lime shrink-0"> <span class="text-xs font-mono flex items-center gap-1">стикеры <span class="new-badge">new</span></span>
+                        </label>
+                    </div>
                 </div>
-                
+
                 <label class="flex items-center gap-2 p-3 bg-red-900/10 rounded border border-red-900/30 cursor-pointer hover:border-red-500 hover:bg-red-900/20 transition-colors">
-                    <input type="checkbox" id="wipe" class="accent-red-500"> 
+                    <input type="checkbox" id="wipe" class="accent-red-500 shrink-0"> 
                     <span class="text-xs font-mono text-red-400 font-bold">ПОЛНАЯ ОЧИСТКА (WIPE)</span>
                 </label>
 
                 <div>
-                    <label class="block text-xs font-mono text-gray-500 mb-2">задержка (мс)</label>
+                    <label class="block text-xs font-mono text-gray-500 mb-1.5">задержка (мс)</label>
                     <input type="number" id="spd" value="3000" min="1000" class="w-full bg-black border border-white/20 p-2 rounded text-white font-mono text-sm focus:border-lime outline-none">
                 </div>
 
-                <div class="mt-auto pt-4">
+                <div>
                     <div class="h-1 bg-white/10 rounded overflow-hidden mb-1">
                         <div id="p_bar" class="h-full bg-lime w-0 transition-all duration-300"></div>
                     </div>
@@ -154,25 +208,25 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="run" onclick="App.init()" class="bg-suc text-white font-bold py-3 rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                <div class="grid grid-cols-2 gap-2 pb-2">
+                    <button id="run" onclick="App.init()" class="bg-suc text-white font-bold py-3 rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 text-sm">
                         <span class="material-symbols-rounded text-lg">play_arrow</span> ЗАПУСК
                     </button>
-                    <button id="pause" onclick="App.togglePause()" class="hidden bg-wrn text-black font-bold py-3 rounded-lg hover:brightness-110 transition-all items-center justify-center gap-2">
+                    <button id="pause" onclick="App.togglePause()" class="hidden bg-wrn text-black font-bold py-3 rounded-lg hover:brightness-110 transition-all items-center justify-center gap-2 text-sm">
                         <span class="material-symbols-rounded text-lg">pause</span> ПАУЗА
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="flex-1 bg-black border border-white/10 rounded-xl p-0 font-mono text-xs overflow-hidden flex flex-col relative group/log">
+        <!-- Log Panel -->
+        <div id="panel-log" class="panel-log flex-1 bg-black border border-white/10 rounded-xl p-0 font-mono text-xs overflow-hidden flex flex-col relative group/log">
             <div id="asset-visualizer" class="absolute inset-0 overflow-hidden pointer-events-none z-0"></div>
-            
             <div class="w-full bg-white/5 border-b border-white/5 px-4 py-3 text-gray-500 flex justify-between items-center z-10 relative bg-black/40 backdrop-blur-sm">
                 <span>execution log</span>
                 <span class="text-lime animate-pulse text-[10px] uppercase font-bold tracking-wider">● live</span>
             </div>
-            <div translate="no" id="log" class="notranslate flex-1 overflow-y-auto p-4 space-y-0.5 scroll-smooth relative z-10">
+            <div translate="no" id="log" class="notranslate flex-1 overflow-y-auto p-3 md:p-4 space-y-0.5 scroll-smooth relative z-10">
                 <div class="text-gray-600 italic text-center mt-20">ожидание запуска...</div>
             </div>
         </div>
@@ -209,20 +263,43 @@
             token: null, sid: null, tid: null, running: false, isPaused: false, refreshTimer: null,
             headers: {}, roles: new Map(), cats: new Map(),
             totalOps: 0, currentOp: 0,
+            activeTab: 'settings',
+
+            switchTab(tab) {
+                this.activeTab = tab;
+                const settings = document.getElementById('panel-settings');
+                const log = document.getElementById('panel-log');
+                const tS = document.getElementById('tab-settings');
+                const tL = document.getElementById('tab-log');
+                if(tab === 'settings') {
+                    settings.classList.remove('panel-hidden');
+                    log.classList.add('panel-hidden');
+                    tS.classList.add('active');
+                    tL.classList.remove('active');
+                } else {
+                    log.classList.remove('panel-hidden');
+                    settings.classList.add('panel-hidden');
+                    tL.classList.add('active');
+                    tS.classList.remove('active');
+                }
+            },
 
             log(m, c='text-gray-400') {
                 const box = document.getElementById('log');
                 if(box.querySelector('div')?.classList.contains('italic')) box.innerHTML = ''; 
-                
                 const d = new Date().toLocaleTimeString('ru-RU', { hour12: false });
                 const el = document.createElement('div');
-                el.className = `flex gap-3 py-1 border-b border-white/5 items-start animate-fade-in hover:bg-black/40 transition-colors px-2 -mx-2 rounded relative z-10`;
+                el.className = `flex gap-2 md:gap-3 py-1 border-b border-white/5 items-start animate-fade-in hover:bg-black/40 transition-colors px-2 -mx-2 rounded relative z-10`;
                 el.innerHTML = `
-                    <span class="font-mono text-[10px] text-gray-500 bg-black/40 px-2 py-0.5 rounded border border-white/5 shrink-0 select-none">${d}</span>
-                    <span class="font-mono text-xs ${c} break-all pt-0.5 drop-shadow-md">${m}</span>
+                    <span class="font-mono text-[9px] md:text-[10px] text-gray-500 bg-black/40 px-1.5 md:px-2 py-0.5 rounded border border-white/5 shrink-0 select-none">${d}</span>
+                    <span class="font-mono text-[11px] md:text-xs ${c} break-all pt-0.5 drop-shadow-md">${m}</span>
                 `;
                 box.append(el);
                 box.scrollTop = box.scrollHeight;
+                // Auto-switch to log on mobile when running
+                if(window.innerWidth < 768 && this.activeTab !== 'log') {
+                    this.switchTab('log');
+                }
             },
 
             visualize(url) {
@@ -230,13 +307,11 @@
                 const container = document.getElementById('asset-visualizer');
                 const img = document.createElement('img');
                 img.src = url;
-                
                 const size = Math.floor(Math.random() * (100 - 40 + 1) + 40);
                 const left = Math.floor(Math.random() * 80 + 10);
                 const top = Math.floor(Math.random() * 80 + 10);
                 const rStart = Math.floor(Math.random() * 40 - 20);
                 const rEnd = Math.floor(Math.random() * 90 - 45);
-
                 img.className = 'visual-asset';
                 img.style.width = `${size}px`;
                 img.style.height = `${size}px`;
@@ -244,13 +319,11 @@
                 img.style.top = `${top}%`;
                 img.style.setProperty('--r-start', `${rStart}deg`);
                 img.style.setProperty('--r-end', `${rEnd}deg`);
-
                 container.appendChild(img);
                 if(container.children.length > 10) container.removeChild(container.firstChild);
             },
 
             status(s) { document.getElementById('status-text').innerText = s; },
-            
             wait: ms => BgTimer.wait(ms),
 
             toggleDD(id) {
@@ -284,25 +357,20 @@
                 this.token = localStorage.getItem('allisighs_discord_token');
                 if(!this.token) return;
                 this.headers = { "Authorization": this.token, "Content-Type": "application/json" };
-                
                 const btnIcon = document.getElementById('refresh-icon');
                 if(!auto && btnIcon) btnIcon.classList.add('animate-spin');
-
                 try {
                     const guilds = await this.req('/users/@me/guilds');
                     if(!guilds || !Array.isArray(guilds)) {
                         if(!auto) this.log("ошибка получения серверов", "text-err");
                         return;
                     }
-                    
                     const srcOpen = !document.getElementById('src_dd').classList.contains('hidden');
                     const tgtOpen = !document.getElementById('tgt_dd').classList.contains('hidden');
-                    
                     if (!auto || (!srcOpen && !tgtOpen)) {
                         this.renderDropdown(guilds, 'src');
                         this.renderDropdown(guilds, 'tgt', true);
                     }
-                    
                     if(!auto) this.log(`список обновлен: ${guilds.length} серверов`, "text-lime");
                 } catch(e) { 
                     if(!auto) this.log("ошибка api", "text-err"); 
@@ -318,16 +386,14 @@
                     const isAdmin = (BigInt(g.permissions) & 0x8n) === 0x8n;
                     const isOwner = g.owner; 
                     if(isTarget && !isAdmin && !isOwner) return;
-
                     const meta = this.getGuildMeta(g.id);
                     let badges = isOwner ? '<span class="badge bg-amber-500">OWN</span>' : isAdmin ? '<span class="badge bg-suc">ADM</span>' : '';
                     let icon = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : `https://cdn.discordapp.com/embed/avatars/0.png`;
-                    
                     const item = document.createElement('div');
                     item.className = 'dd-opt text-gray-300';
                     item.innerHTML = `
                         <img src="${icon}" class="g-icon"> 
-                        <div class="flex-1 overflow-hidden">
+                        <div class="flex-1 overflow-hidden min-w-0">
                             <div class="truncate text-xs font-bold text-gray-200">${g.name}</div>
                             <div class="text-[9px] font-mono text-gray-600">${meta.text}</div>
                         </div>
@@ -371,11 +437,11 @@
                     this.status("ПАУЗА");
                     const btn = document.getElementById('pause');
                     btn.innerHTML = '<span class="material-symbols-rounded text-lg">play_arrow</span> ДАЛЕЕ';
-                    btn.className = "flex bg-lime text-black font-bold py-3 rounded-lg animate-pulse items-center justify-center gap-2";
+                    btn.className = "flex bg-lime text-black font-bold py-3 rounded-lg animate-pulse items-center justify-center gap-2 text-sm";
                     while(this.isPaused) await this.wait(500);
                     this.status("РАБОТАЕТ");
                     btn.innerHTML = '<span class="material-symbols-rounded text-lg">pause</span> ПАУЗА';
-                    btn.className = "flex bg-wrn text-black font-bold py-3 rounded-lg hover:brightness-110 transition-all items-center justify-center gap-2";
+                    btn.className = "flex bg-wrn text-black font-bold py-3 rounded-lg hover:brightness-110 transition-all items-center justify-center gap-2 text-sm";
                 }
             },
             togglePause(){ this.isPaused=!this.isPaused; },
@@ -407,19 +473,59 @@
                 document.getElementById('p_time').innerText = minLeft < 1 ? "< 1 мин." : `~ ${minLeft} мин.`;
             },
 
+            // NEW: Create empty server via API
+            async createServer() {
+                const name = document.getElementById('new-server-name').value.trim();
+                const statusEl = document.getElementById('create-server-status');
+                if(!name) { 
+                    statusEl.textContent = 'введи название сервера';
+                    statusEl.classList.remove('hidden');
+                    return; 
+                }
+                this.token = localStorage.getItem('allisighs_discord_token');
+                if(!this.token) return;
+                this.headers = { "Authorization": this.token, "Content-Type": "application/json" };
+                statusEl.textContent = 'создание...';
+                statusEl.classList.remove('hidden');
+                try {
+                    const guild = await fetch(this.base + '/guilds', {
+                        method: 'POST',
+                        headers: this.headers,
+                        body: JSON.stringify({ name: name })
+                    });
+                    if(!guild.ok) throw new Error(guild.status);
+                    const g = await guild.json();
+                    statusEl.textContent = `✓ сервер "${g.name}" создан!`;
+                    statusEl.className = 'text-[10px] font-mono text-lime mt-2 text-center';
+                    document.getElementById('new-server-name').value = '';
+                    await this.wait(1500);
+                    document.getElementById('create-server-modal').classList.replace('flex','hidden');
+                    statusEl.classList.add('hidden');
+                    statusEl.className = 'text-[10px] font-mono text-gray-500 mt-2 text-center hidden';
+                    await this.fetchGuilds(false);
+                    this.log(`[+] создан новый сервер: ${g.name}`, 'text-lime');
+                } catch(e) {
+                    statusEl.textContent = `ошибка: ${e.message}`;
+                    statusEl.className = 'text-[10px] font-mono text-red-400 mt-2 text-center';
+                }
+            },
+
             async init() {
                 this.token = localStorage.getItem('allisighs_discord_token');
-                this.sid=document.getElementById('src_id').value;
-                this.tid=document.getElementById('tgt_id').value;
+                this.sid = document.getElementById('src_id').value;
+                this.tid = document.getElementById('tgt_id').value;
                 
                 if(!this.token || !this.sid || !this.tid || this.sid===this.tid) return this.log('ошибка: проверь настройки', 'text-err');
                 
                 const opt = {
-                    icon: document.getElementById('c_icon').checked,
-                    roles: document.getElementById('c_roles').checked,
-                    chans: document.getElementById('c_chans').checked,
-                    emoji: document.getElementById('c_emoji').checked,
-                    wipe: document.getElementById('wipe').checked
+                    icon:     document.getElementById('c_icon').checked,
+                    banner:   document.getElementById('c_banner').checked,
+                    splash:   document.getElementById('c_splash').checked,
+                    roles:    document.getElementById('c_roles').checked,
+                    chans:    document.getElementById('c_chans').checked,
+                    emoji:    document.getElementById('c_emoji').checked,
+                    stickers: document.getElementById('c_stickers').checked,
+                    wipe:     document.getElementById('wipe').checked
                 };
                 
                 this.running = true;
@@ -429,23 +535,24 @@
                 document.getElementById('run').classList.add('opacity-50', 'cursor-not-allowed');
                 document.getElementById('pause').classList.replace('hidden', 'flex');
                 this.status("СБОР ДАННЫХ...");
-                
                 this.currentOp = 0; this.totalOps = 1; 
 
                 try {
                     const sG = await this.req(`/guilds/${this.sid}`);
                     if(!sG) throw new Error("нет доступа к источнику");
                     
-                    let sRoles=[], sChans=[], sEmojis=[];
+                    let sRoles=[], sChans=[], sEmojis=[], sStickers=[];
                     if(opt.roles) sRoles = await this.req(`/guilds/${this.sid}/roles`)||[];
                     if(opt.chans) sChans = await this.req(`/guilds/${this.sid}/channels`)||[];
                     if(opt.emoji) sEmojis = await this.req(`/guilds/${this.sid}/emojis`)||[];
+                    if(opt.stickers) sStickers = await this.req(`/guilds/${this.sid}/stickers`)||[];
                     
-                    this.totalOps = sRoles.length + sChans.length + sEmojis.length + (opt.wipe ? 20 : 0);
+                    this.totalOps = sRoles.length + sChans.length + sEmojis.length + sStickers.length + (opt.wipe ? 20 : 0);
                     if(this.totalOps===0) this.totalOps=1;
 
                     this.log(`старт: ${sG.name} [задач: ${this.totalOps}]`, 'text-lime');
 
+                    // WIPE
                     if(opt.wipe) {
                         this.log('!! полная очистка цели !!', 'text-wrn');
                         try {
@@ -455,22 +562,49 @@
                             for(let r of roles) if(!r.managed && r.name!=='@everyone') await this.safeDelete(`/guilds/${this.tid}/roles/${r.id}`, r.name);
                             const ems = await this.req(`/guilds/${this.tid}/emojis`)||[];
                             for(let e of ems) await this.safeDelete(`/guilds/${this.tid}/emojis/${e.id}`, e.name);
+                            const stks = await this.req(`/guilds/${this.tid}/stickers`)||[];
+                            for(let s of stks) await this.safeDelete(`/guilds/${this.tid}/stickers/${s.id}`, s.name);
                         } catch(e) { this.log("ошибка wipe: "+e.message, 'text-err'); }
                     }
 
-                    if(opt.icon) {
+                    // ICON + BANNER + SPLASH
+                    if(opt.icon || opt.banner || opt.splash) {
                         try {
-                            let icon = null;
-                            const iconUrl = sG.icon ? `https://cdn.discordapp.com/icons/${this.sid}/${sG.icon}.png?size=512` : null;
-                            if(iconUrl) {
-                                icon = await this.urlToBase64(iconUrl);
-                                this.visualize(iconUrl);
+                            const patch = {};
+
+                            if(opt.icon) {
+                                const iconUrl = sG.icon ? `https://cdn.discordapp.com/icons/${this.sid}/${sG.icon}.${sG.icon.startsWith('a_')?'gif':'png'}?size=512` : null;
+                                if(iconUrl) {
+                                    const icon = await this.urlToBase64(iconUrl);
+                                    if(icon) { patch.icon = icon; this.visualize(iconUrl); }
+                                }
+                                patch.name = sG.name;
+                                this.log('иконка/имя обновлены', 'text-suc');
                             }
-                            await this.req(`/guilds/${this.tid}`, 'PATCH', { name:sG.name, icon:icon });
-                            this.log('иконка/имя обновлены', 'text-suc');
-                        } catch(e){ this.log("ошибка icon: "+e.message, 'text-err'); }
+
+                            if(opt.banner && sG.banner) {
+                                const bannerUrl = `https://cdn.discordapp.com/banners/${this.sid}/${sG.banner}.${sG.banner.startsWith('a_')?'gif':'png'}?size=1024`;
+                                const banner = await this.urlToBase64(bannerUrl);
+                                if(banner) { patch.banner = banner; this.visualize(bannerUrl); this.log('баннер скопирован', 'text-suc'); }
+                            } else if(opt.banner) {
+                                this.log('баннер: источник не имеет баннера', 'text-gray-500');
+                            }
+
+                            if(opt.splash && sG.splash) {
+                                const splashUrl = `https://cdn.discordapp.com/splashes/${this.sid}/${sG.splash}.png?size=1024`;
+                                const splash = await this.urlToBase64(splashUrl);
+                                if(splash) { patch.splash = splash; this.visualize(splashUrl); this.log('splash скопирован', 'text-suc'); }
+                            } else if(opt.splash) {
+                                this.log('splash: источник не имеет splash', 'text-gray-500');
+                            }
+
+                            if(Object.keys(patch).length > 0) {
+                                await this.req(`/guilds/${this.tid}`, 'PATCH', patch);
+                            }
+                        } catch(e){ this.log("ошибка медиа сервера: "+e.message, 'text-err'); }
                     }
 
+                    // ROLES
                     if(opt.roles) {
                         this.log('копирование ролей...', 'text-white');
                         const tRoles = await this.req(`/guilds/${this.tid}/roles`)||[];
@@ -501,6 +635,7 @@
                         }
                     }
 
+                    // CHANNELS
                     if(opt.chans) {
                         this.log('создание каналов...', 'text-white');
                         const tChans = opt.wipe ? [] : (await this.req(`/guilds/${this.tid}/channels`)||[]);
@@ -527,7 +662,6 @@
                                 if(![0,2,4,13,15].includes(type)) continue; 
                                 const pid = this.cats.get(c.parent_id);
                                 const ex = tChans.find(x => x.name===c.name && x.type===type && x.parent_id==pid);
-
                                 if(ex) { this.log(`[сущ] канал: #${c.name}`, 'text-gray-500'); continue; }
 
                                 let msgs = [], skip=true;
@@ -554,6 +688,7 @@
                         }
                     }
 
+                    // EMOJIS
                     if(opt.emoji) {
                         this.log('копирование эмодзи...', 'text-white');
                         const et = await this.req(`/guilds/${this.tid}/emojis`)||[];
@@ -571,6 +706,50 @@
                                 }
                             } catch(err) { this.log(`сбой эмодзи ${e.name}`, 'text-err'); }
                         }
+                    }
+
+                    // STICKERS (NEW)
+                    if(opt.stickers && sStickers.length > 0) {
+                        this.log('копирование стикеров...', 'text-white');
+                        const tStickers = await this.req(`/guilds/${this.tid}/stickers`)||[];
+                        for(let s of sStickers) {
+                            try {
+                                this.updateProgress();
+                                if(tStickers.find(x=>x.name===s.name)) { 
+                                    this.log(`[сущ] стикер: ${s.name}`, 'text-gray-500'); 
+                                    continue; 
+                                }
+                                // Stickers use multipart/form-data
+                                const ext = s.format_type === 1 ? 'png' : s.format_type === 2 ? 'apng' : 'lottie';
+                                const stickerUrl = `https://cdn.discordapp.com/stickers/${s.id}.${ext === 'lottie' ? 'json' : ext}`;
+                                
+                                let blob;
+                                try { blob = await window.downloadCdnFile(stickerUrl); } catch { continue; }
+                                if(!blob) continue;
+
+                                this.visualize(ext !== 'lottie' ? stickerUrl : null);
+
+                                const form = new FormData();
+                                form.append('name', s.name);
+                                form.append('description', s.description || s.name);
+                                form.append('tags', s.tags || '✨');
+                                form.append('file', blob, `sticker.${ext === 'lottie' ? 'json' : ext}`);
+
+                                const res = await fetch(`${this.base}/guilds/${this.tid}/stickers`, {
+                                    method: 'POST',
+                                    headers: { "Authorization": this.token },
+                                    body: form
+                                });
+                                if(res.ok) {
+                                    this.log(`+стикер: ${s.name}`, 'text-suc');
+                                } else {
+                                    this.log(`стикер ${s.name}: ${res.status}`, 'text-err');
+                                }
+                                await this.wait(3000);
+                            } catch(err) { this.log(`сбой стикера ${s.name}`, 'text-err'); }
+                        }
+                    } else if(opt.stickers) {
+                        this.log('стикеры: на источнике нет стикеров', 'text-gray-500');
                     }
                     
                     document.getElementById('p_bar').style.width = `100%`;
@@ -606,9 +785,7 @@
                         if(!m.content && !m.attachments.length && !m.embeds.length) continue;
                         let c = m.content;
                         if(m.attachments.length) c+="\n"+m.attachments.map(x=>x.url).join('\n');
-                        
                         if(m.author.avatar) this.visualize(`https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png`);
-                        
                         await fetch(`https://discord.com/api/webhooks/${wh.id}/${wh.token}?wait=true`, {
                             method:'POST',headers:{'Content-Type':'application/json'},
                             body:JSON.stringify({username:m.author.username,avatar_url:m.author.avatar?`https://cdn.discordapp.com/avatars/${m.author.id}/${m.author.avatar}.png`:null,content:c,embeds:m.embeds,tts:m.tts})
@@ -621,7 +798,7 @@
         };
 
         window.onclick = function(e) {
-            if (!e.target.closest('.group')) {
+            if (!e.target.closest('.group') && !e.target.closest('.dd-list')) {
                 document.querySelectorAll('.dd-list').forEach(d => d.classList.add('hidden'));
             }
         }
