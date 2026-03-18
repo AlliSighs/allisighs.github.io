@@ -120,7 +120,7 @@
                     <div class="text-xs text-lime font-mono mt-1" id="status-text">система готова</div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="document.getElementById('create-server-modal').classList.replace('hidden','flex')" class="p-2 bg-lime/10 border border-lime/20 rounded-lg hover:bg-lime/20 text-lime transition-colors group relative" title="создать новый сервер">
+                    <button id="btn-create-server" onclick="document.getElementById('create-server-modal').classList.replace('hidden','flex')" class="p-2 bg-lime/10 border border-lime/20 rounded-lg hover:bg-lime/20 text-lime transition-colors group relative hidden" title="создать новый сервер">
                         <span class="material-symbols-rounded text-xl">add</span>
                     </button>
                     <button onclick="App.fetchGuilds(false)" class="p-2 bg-white/5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors group relative" title="обновить список серверов">
@@ -253,7 +253,8 @@
 
         window.onDiscordReady = () => { 
             BgTimer.init();
-            App.fetchGuilds(); 
+            App.fetchGuilds();
+            App.checkCreateBtn();
             if(App.refreshTimer) clearInterval(App.refreshTimer);
             App.refreshTimer = setInterval(() => App.fetchGuilds(true), 15000);
         };
@@ -351,6 +352,22 @@
                     if(diff>30) return { text: `${Math.floor(diff/30)} months`, isOld:true };
                     return { text: `NEW`, isOld:false };
                 } catch { return { text: "unknown", isOld:true }; }
+            },
+
+            async checkCreateBtn() {
+                try {
+                    const token = localStorage.getItem('allisighs_discord_token');
+                    if(!token) return;
+                    const res = await fetch(this.base + '/users/@me/guilds', {
+                        headers: { 'Authorization': token, 'Content-Type': 'application/json' }
+                    });
+                    if(!res.ok) return;
+                    const guilds = await res.json();
+                    const btn = document.getElementById('btn-create-server');
+                    if(Array.isArray(guilds) && guilds.length < 10) {
+                        btn.classList.remove('hidden');
+                    }
+                } catch(e) {}
             },
 
             async fetchGuilds(auto = false) {
@@ -477,36 +494,45 @@
             async createServer() {
                 const name = document.getElementById('new-server-name').value.trim();
                 const statusEl = document.getElementById('create-server-status');
-                if(!name) { 
-                    statusEl.textContent = 'введи название сервера';
+                const setStatus = (msg, color='text-gray-400') => {
+                    statusEl.textContent = msg;
+                    statusEl.className = `text-[10px] font-mono mt-2 text-center ${color}`;
                     statusEl.classList.remove('hidden');
-                    return; 
-                }
+                };
+                if(!name) { setStatus('введи название сервера', 'text-wrn'); return; }
                 this.token = localStorage.getItem('allisighs_discord_token');
                 if(!this.token) return;
                 this.headers = { "Authorization": this.token, "Content-Type": "application/json" };
-                statusEl.textContent = 'создание...';
-                statusEl.classList.remove('hidden');
+                setStatus('создание...');
                 try {
-                    const guild = await fetch(this.base + '/guilds', {
+                    const res = await fetch(this.base + '/guilds', {
                         method: 'POST',
                         headers: this.headers,
                         body: JSON.stringify({ name: name })
                     });
-                    if(!guild.ok) throw new Error(guild.status);
-                    const g = await guild.json();
-                    statusEl.textContent = `✓ сервер "${g.name}" создан!`;
-                    statusEl.className = 'text-[10px] font-mono text-lime mt-2 text-center';
+                    if(res.status === 403) {
+                        // Discord limits POST /guilds to accounts in <10 servers
+                        // Try to get guild count to give useful error
+                        const guildsRes = await fetch(this.base + '/users/@me/guilds', { headers: this.headers });
+                        const guilds = guildsRes.ok ? await guildsRes.json() : [];
+                        const count = Array.isArray(guilds) ? guilds.length : '?';
+                        setStatus(`403: аккаунт на ${count} серверах. discord запрещает POST /guilds если серверов ≥10. выйди с лишних серверов.`, 'text-red-400');
+                        return;
+                    }
+                    if(!res.ok) {
+                        const j = await res.json().catch(()=>({}));
+                        throw new Error(`${res.status}: ${j.message || 'unknown'}`);
+                    }
+                    const g = await res.json();
+                    setStatus(`✓ сервер "${g.name}" создан!`, 'text-lime');
                     document.getElementById('new-server-name').value = '';
-                    await this.wait(1500);
+                    await new Promise(r=>setTimeout(r,1500));
                     document.getElementById('create-server-modal').classList.replace('flex','hidden');
                     statusEl.classList.add('hidden');
-                    statusEl.className = 'text-[10px] font-mono text-gray-500 mt-2 text-center hidden';
                     await this.fetchGuilds(false);
-                    this.log(`[+] создан новый сервер: ${g.name}`, 'text-lime');
+                    this.log(`[+] создан новый сервер: ${g.name} (id: ${g.id})`, 'text-lime');
                 } catch(e) {
-                    statusEl.textContent = `ошибка: ${e.message}`;
-                    statusEl.className = 'text-[10px] font-mono text-red-400 mt-2 text-center';
+                    setStatus(`ошибка: ${e.message}`, 'text-red-400');
                 }
             },
 
