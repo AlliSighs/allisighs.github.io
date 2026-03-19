@@ -385,18 +385,44 @@ function logoutDiscord() {
 }
 
 window.downloadCdnFile = async (url) => {
-    const proxy = "https://corsproxy.io/?"; 
-    
-    if (!url.includes('cdn.discordapp.com') && !url.includes('media.discordapp.net')) {
+    const isDiscord = url.includes('cdn.discordapp.com') || url.includes('media.discordapp.net');
+
+    if (!isDiscord) {
         const res = await fetch(url);
+        if (!res.ok) throw new Error('fetch failed: ' + res.status);
         return await res.blob();
     }
 
-    try {
-        const res = await fetch(proxy + encodeURIComponent(url));
-        if (!res.ok) throw new Error('Proxy Error');
-        return await res.blob();
-    } catch (e) {
-        throw e;
+    const enc = encodeURIComponent(url);
+
+    
+    const proxies = [
+        () => fetch(`https://corsproxy.io/?${enc}`,                         { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://api.allorigins.win/raw?url=${enc}`,            { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://corsproxy.io/?url=${enc}`,                     { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`,       { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://thingproxy.freeboard.io/fetch/${url}`,         { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://yacdn.org/proxy/${url}`,                       { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://cors.eu.org/${url}`,                           { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://cors-proxy.fringe.zone/${url}`,                { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://proxy.cors.sh/${url}`,                         { signal: AbortSignal.timeout(8000) }),
+        () => fetch(`https://crossorigin.me/${url}`,                        { signal: AbortSignal.timeout(8000) }),
+    ];
+
+    
+    for (const attempt of proxies) {
+        for (let retry = 0; retry < 2; retry++) {
+            try {
+                const res = await attempt();
+                if (!res.ok) break; 
+                const blob = await res.blob();
+                if (blob.size < 16) break;
+                return blob;
+            } catch (e) {
+                if (retry === 0) await new Promise(r => setTimeout(r, 500));
+            }
+        }
     }
+
+    throw new Error('все прокси недоступны: ' + url);
 };
