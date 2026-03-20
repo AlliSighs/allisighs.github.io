@@ -536,6 +536,12 @@
                 this.renderFileList();
             },
 
+            toggleSelectAll() {
+                this.allSelected = !this.allSelected;
+                document.querySelectorAll(".slon-file-cb").forEach(cb => cb.checked = this.allSelected);
+                document.getElementById("slon-select-all-icon").innerText = this.allSelected ? "remove_done" : "done_all";
+            },
+
             renderFileList() {
                 const list = document.getElementById('slon-file-list');
                 const keys = Object.keys(this.files).sort();
@@ -758,7 +764,8 @@
                     <div>
                         <div style="font-family:monospace; font-size:13px; font-weight:bold; color:#fff;">файлы</div>
                         <div style="font-family:monospace; font-size:10px; color:#555;">всего: <span id="slon-file-count" style="color:#ccff00;">0</span></div>
-                    </div>
+                        <button onclick="SlonyaraTab.toggleSelectAll()" title="выбрать все" style="background:none; border:none; color:#555; cursor:pointer; padding:4px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.color='#555'; this.style.background='none'"><span class="material-symbols-rounded" id="slon-select-all-icon" style="font-size:20px; display:block;">done_all</span></button>
+                </div>
                 </div>
 
                 <!-- Drop zone -->
