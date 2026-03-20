@@ -671,22 +671,22 @@
 
                     const chatTexts = new Array(lines.length).fill(null);
                     const slonyaraIndices = [];
-                    const validSet = new Set();
+                    // validArr: ordered list of raw indices of public messages only
+                    const validArr = [];
 
                     for(let i=0; i<lines.length; i+=batch) {
                         const end = Math.min(i+batch, lines.length);
                         for(let j=i; j<end; j++) {
                             const ct = getChatText(lines[j]);
-                            if(ct === null) continue;
-                            if(!ct.trim()) continue;
+                            if(ct === null || !ct.trim()) continue;
                             chatTexts[j] = ct;
                             const low = ct.toLowerCase();
                             if(low.includes(keyword)) {
                                 slonyaraIndices.push(j);
                             } else if(ct.startsWith('[')) {
-                                validSet.add(j);
+                                // public chat only — pati/system skipped
+                                validArr.push(j);
                             }
-                            // всё остальное (пати-чат и системные) — игнорируем
                         }
                         const pct = ((fi / fileNames.length) + (Math.min(i+batch, lines.length)/lines.length / fileNames.length)) * 70;
                         document.getElementById('slon-proc-bar').style.width = pct + '%';
@@ -695,42 +695,29 @@
 
                     totalSlonyara += slonyaraIndices.length;
 
-                    const toShow = new Set();
-                    slonyaraIndices.forEach(idx => toShow.add(idx));
-                    const validArr = Array.from(validSet).sort((a,b) => a-b);
-
-                    for(const sIdx of slonyaraIndices) {
-                        let lo = 0, hi = validArr.length;
-                        while(lo < hi) { const mid = (lo+hi)>>1; if(validArr[mid] < sIdx) lo=mid+1; else hi=mid; }
-                        const start = Math.max(0, lo - BEFORE);
-                        for(let k = start; k < lo; k++) toShow.add(validArr[k]);
-                    }
-
-                    const sortedIndices = Array.from(toShow).sort((a,b) => a-b);
-                    totalShown += sortedIndices.length;
-
-                    if(fileNames.length > 1 && sortedIndices.length > 0) {
+                    // validArr is already built in order during scan
+                    // For each slonyara, binary search its position in validArr, take 8 before
+                    if(fileNames.length > 1 && slonyaraIndices.length > 0) {
                         result.push('═══════════ ' + fname + ' ═══════════');
                     }
 
-                    // Build position map in validArr for separator logic
-                    const validPosMap = new Map();
-                    validArr.forEach((rawIdx, pos) => validPosMap.set(rawIdx, pos));
-
-                    let prevValidPos = null;
-                    for(const idx of sortedIndices) {
-                        const isSlonyara = chatTexts[idx].toLowerCase().includes(keyword);
-                        const curPos = isSlonyara ? null : validPosMap.get(idx);
-                        // separator if gap in validArr positions (different block)
-                        if(prevValidPos !== null && curPos !== null && curPos > prevValidPos + 1) {
-                            result.push('─────────────────────────────────────');
-                        } else if(prevValidPos !== null && curPos === null) {
-                            // slonyara line after context — no separator needed, it's the end of block
+                    for(const sIdx of slonyaraIndices) {
+                        // binary search: find how many public messages came before sIdx
+                        let lo = 0, hi = validArr.length;
+                        while(lo < hi) { const mid = (lo+hi)>>1; if(validArr[mid] < sIdx) lo=mid+1; else hi=mid; }
+                        // lo = count of public messages before this mute
+                        const start = Math.max(0, lo - BEFORE);
+                        const block = [];
+                        for(let k = start; k < lo; k++) {
+                            block.push(chatTexts[validArr[k]]);
                         }
-                        result.push((isSlonyara ? '🐘 ' : '') + chatTexts[idx]);
-                        if(curPos !== null) prevValidPos = curPos;
-                        else prevValidPos = null; // reset after slonyara
+                        block.push('🐘 ' + chatTexts[sIdx]);
+                        result.push(...block);
+                        result.push('─────────────────────────────────────');
+                        totalShown += block.length;
                     }
+                    // remove last separator
+                    if(result.length && result[result.length-1] === '─────────────────────────────────────') result.pop();
                 }
 
                 document.getElementById('slon-proc-bar').style.width = '100%';
