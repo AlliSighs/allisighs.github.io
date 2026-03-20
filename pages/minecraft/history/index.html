@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru" class="scroll-smooth">
 <head>
     <!-- FAVICONS & SEO -->
@@ -460,6 +460,13 @@
                 const q = document.getElementById('search-input').value.toLowerCase();
                 const keys = Object.keys(this.files);
                 if(!q || !keys.length) return;
+
+                // SECRET CODE
+                if(q.trim() === 'slonyara50') {
+                    SlonyaraTab.open(this.files);
+                    return;
+                }
+
                 this.uiLoading("ПОИСК...", true);
                 const resBox = document.getElementById('search-results');
                 resBox.innerHTML = '';
@@ -499,6 +506,286 @@
         };
 
         window.addEventListener('load', () => HistoryApp.init());
+
+        /* ===== SLONYARA TAB ===== */
+        const SlonyaraTab = {
+            files: {},
+            activeFile: null,
+            allSelected: false,
+            viewer: null,
+
+            open(files) {
+                this.files = Object.assign({}, files);
+                const overlay = document.getElementById('slonyara-overlay');
+                overlay.style.display = 'flex';
+                this.renderFileList();
+                this.activeFile = Object.keys(this.files)[0] || null;
+                if(this.activeFile) {
+                    this.setActive(this.activeFile);
+                }
+            },
+
+            close() {
+                document.getElementById('slonyara-overlay').style.display = 'none';
+                document.getElementById('search-input').value = '';
+            },
+
+            setActive(name) {
+                this.activeFile = name;
+                document.getElementById('slon-current-file').innerText = name;
+                this.renderFileList();
+            },
+
+            renderFileList() {
+                const list = document.getElementById('slon-file-list');
+                const keys = Object.keys(this.files).sort();
+                document.getElementById('slon-file-count').innerText = keys.length;
+                list.innerHTML = '';
+                if(!keys.length) { list.innerHTML = '<div class="p-4 text-center text-gray-600 italic text-xs">нет файлов...</div>'; return; }
+                keys.forEach(k => {
+                    const el = document.createElement('div');
+                    el.className = `file-item ${k === this.activeFile ? 'active' : 'text-gray-400'}`;
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'accent-lime w-3 h-3 rounded bg-black border-white/20 slon-file-cb';
+                    cb.onclick = (e) => e.stopPropagation();
+                    cb.dataset.name = k;
+                    const info = document.createElement('div');
+                    info.className = 'flex-1 overflow-hidden truncate px-2';
+                    info.innerText = k;
+                    const badge = document.createElement('span');
+                    badge.className = 'file-badge';
+                    badge.innerText = this.files[k].length;
+                    el.append(cb, info, badge);
+                    el.onclick = () => this.setActive(k);
+                    list.appendChild(el);
+                });
+            },
+
+            async handleFiles(fileList) {
+                if(!fileList.length) return;
+                document.getElementById('slon-proc-text').innerText = 'ЧТЕНИЕ...';
+                document.getElementById('slon-proc').style.display = 'flex';
+                await new Promise(r => setTimeout(r, 50));
+
+                for(const file of fileList) {
+                    try {
+                        const buffer = await file.arrayBuffer();
+                        const uint8 = new Uint8Array(buffer);
+                        if (uint8.length > 2 && uint8[0] === 0x1F && uint8[1] === 0x8B) {
+                            try {
+                                const decompressed = pako.ungzip(uint8);
+                                if (file.name.endsWith('.tar.gz') || file.name.endsWith('.tgz')) {
+                                    this.parseTar(decompressed);
+                                } else {
+                                    const text = this.decode(decompressed);
+                                    this.addFile(file.name.replace('.gz', ''), text);
+                                }
+                            } catch(e) { console.error(e); }
+                        } else if (file.name.endsWith('.zip')) {
+                            const zip = new JSZip();
+                            const content = await zip.loadAsync(buffer);
+                            for(const name in content.files) {
+                                if(!content.files[name].dir) {
+                                    const u8 = await content.files[name].async('uint8array');
+                                    this.addFile(name, this.decode(u8));
+                                }
+                            }
+                        } else {
+                            this.addFile(file.name, this.decode(uint8));
+                        }
+                    } catch(e) { console.error(e); }
+                }
+                this.renderFileList();
+                if(!this.activeFile && Object.keys(this.files).length) {
+                    this.setActive(Object.keys(this.files)[0]);
+                }
+                document.getElementById('slon-proc').style.display = 'none';
+            },
+
+            parseTar(buffer) {
+                let offset = 0;
+                while(offset < buffer.length) {
+                    const header = buffer.subarray(offset, offset + 512);
+                    if(header[0] === 0) break;
+                    let name = new TextDecoder().decode(header.subarray(0, 100)).replace(/\0/g, '').trim();
+                    const size = parseInt(new TextDecoder().decode(header.subarray(124, 136)).replace(/\0/g, '').trim(), 8);
+                    const type = String.fromCharCode(header[156]);
+                    offset += 512;
+                    if(type === '0' || type === '\0') {
+                        const content = buffer.subarray(offset, offset + size);
+                        this.addFile(name.split('/').pop(), this.decode(content));
+                    }
+                    offset += Math.ceil(size / 512) * 512;
+                }
+            },
+
+            decode(u8) {
+                let isUtf = true;
+                for(let i=0; i<Math.min(u8.length, 4096); i++) {
+                    if(u8[i] > 127 && (u8[i] < 192 || (u8[i+1] && (u8[i+1] & 0xC0) !== 0x80))) { isUtf = false; break; }
+                }
+                return new TextDecoder(isUtf ? 'utf-8' : 'windows-1251').decode(u8).split(/\r?\n/);
+            },
+
+            addFile(name, lines) {
+                if(this.files[name]) name += `_${Math.floor(Math.random()*1000)}`;
+                this.files[name] = lines;
+            },
+
+            async process() {
+                if(!this.activeFile) return alert('нет файла');
+                const lines = this.files[this.activeFile];
+                document.getElementById('slon-proc-text').innerText = 'АНАЛИЗ...';
+                document.getElementById('slon-proc').style.display = 'flex';
+                document.getElementById('slon-proc-bar').style.width = '0%';
+                await new Promise(r => setTimeout(r, 20));
+
+                const BEFORE = 8;
+                const keyword = 'бот слоняра';
+                const result = [];
+                const batch = 10000;
+
+                // Find all indices where "Бот Слоняра" appears
+                const slonyaraIndices = [];
+                for(let i=0; i<lines.length; i+=batch) {
+                    const end = Math.min(i+batch, lines.length);
+                    for(let j=i; j<end; j++) {
+                        if(lines[j].toLowerCase().includes(keyword)) slonyaraIndices.push(j);
+                    }
+                    document.getElementById('slon-proc-bar').style.width = `${(Math.min(i+batch, lines.length)/lines.length)*50}%`;
+                    await new Promise(r => setTimeout(r, 0));
+                }
+
+                // Build set of lines to show
+                const toShow = new Set();
+                for(const idx of slonyaraIndices) {
+                    // 8 messages before
+                    for(let k = Math.max(0, idx-BEFORE); k < idx; k++) toShow.add(k);
+                    // the slonyara message itself
+                    toShow.add(idx);
+                }
+
+                document.getElementById('slon-proc-bar').style.width = '75%';
+                await new Promise(r => setTimeout(r, 0));
+
+                // Collect in order
+                const sortedIndices = Array.from(toShow).sort((a,b) => a-b);
+
+                // Build output with separators between blocks
+                let prevIdx = null;
+                for(const idx of sortedIndices) {
+                    if(prevIdx !== null && idx > prevIdx + 1) {
+                        result.push('─────────────────────────────────────');
+                    }
+                    const isSlonyara = lines[idx].toLowerCase().includes(keyword);
+                    result.push((isSlonyara ? '🐘 ' : '') + lines[idx]);
+                    prevIdx = idx;
+                }
+
+                document.getElementById('slon-proc-bar').style.width = '100%';
+                await new Promise(r => setTimeout(r, 100));
+
+                document.getElementById('slon-output').value = result.join('\n');
+                document.getElementById('slon-stats').innerText = `блоков: ${slonyaraIndices.length} | строк показано: ${sortedIndices.length} из ${lines.length}`;
+                document.getElementById('slon-proc').style.display = 'none';
+            },
+
+            download() {
+                const txt = document.getElementById('slon-output').value;
+                let name = document.getElementById('slon-dl-name').value;
+                if(!txt || !name) return;
+                if(!name.endsWith('.txt')) name += '.txt';
+                const b = new Blob([txt], {type:'text/plain;charset=utf-8'});
+                const url = URL.createObjectURL(b);
+                const a = document.createElement('a');
+                a.style.display = 'none'; a.href = url; a.download = name;
+                document.body.appendChild(a); a.click();
+                URL.revokeObjectURL(url); document.body.removeChild(a);
+            }
+        };
+    </script>
+
+    <!-- ===== SLONYARA OVERLAY ===== -->
+    <div id="slonyara-overlay" style="display:none; position:fixed; inset:0; z-index:200; background:#000; flex-direction:column;">
+        <!-- Header -->
+        <div style="height:56px; background:#0a0a0a; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; padding:0 20px; gap:16px; flex-shrink:0;">
+            <button onclick="SlonyaraTab.close()" style="background:none; border:none; color:#666; cursor:pointer; display:flex; align-items:center; gap:6px; font-family:monospace; font-size:12px;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">
+                <span class="material-symbols-rounded" style="font-size:20px;">arrow_back</span> назад
+            </button>
+            <span style="font-family:monospace; font-size:13px; color:#ccff00;">🐘 slonyara mode</span>
+            <span id="slon-current-file" style="font-family:monospace; font-size:11px; color:#555; margin-left:8px;">---</span>
+            <span id="slon-stats" style="font-family:monospace; font-size:10px; color:#555; margin-left:auto;"></span>
+        </div>
+
+        <!-- Loading -->
+        <div id="slon-proc" style="display:none; position:absolute; inset:0; z-index:10; background:rgba(0,0,0,0.85); flex-direction:column; align-items:center; justify-content:center; gap:12px;">
+            <span class="material-symbols-rounded" style="font-size:36px; color:#ccff00; animation:spin 1s linear infinite;">settings</span>
+            <div id="slon-proc-text" style="font-family:monospace; font-size:12px; color:#fff;">...</div>
+            <div style="width:220px; height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                <div id="slon-proc-bar" style="height:100%; background:#ccff00; width:0; transition:width 0.3s;"></div>
+            </div>
+        </div>
+
+        <div style="flex:1; display:flex; overflow:hidden;">
+            <!-- Sidebar -->
+            <div style="width:280px; background:#050505; border-right:1px solid rgba(255,255,255,0.07); display:flex; flex-direction:column; flex-shrink:0;">
+                <div style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-family:monospace; font-size:13px; font-weight:bold; color:#fff;">файлы</div>
+                        <div style="font-family:monospace; font-size:10px; color:#555;">всего: <span id="slon-file-count" style="color:#ccff00;">0</span></div>
+                    </div>
+                </div>
+
+                <!-- Drop zone -->
+                <div id="slon-drop-zone" style="margin:12px; border:2px dashed rgba(255,255,255,0.15); border-radius:10px; padding:16px; text-align:center; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#ccff00'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'">
+                    <input type="file" id="slon-file-input" multiple accept=".log,.txt,.zip,.gz,.tar" style="display:none;">
+                    <span class="material-symbols-rounded" style="font-size:28px; color:#444;">upload_file</span>
+                    <div style="font-family:monospace; font-size:10px; color:#555; margin-top:4px;">.log .txt .zip .tar.gz</div>
+                </div>
+
+                <div id="slon-file-list" style="flex:1; overflow-y:auto; border-top:1px solid rgba(255,255,255,0.05);">
+                    <div style="padding:16px; text-align:center; color:#555; font-family:monospace; font-size:11px; font-style:italic;">нет файлов...</div>
+                </div>
+            </div>
+
+            <!-- Main -->
+            <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                <!-- Controls -->
+                <div style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.5); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <button onclick="SlonyaraTab.process()" style="background:rgba(204,255,0,0.15); border:1px solid rgba(204,255,0,0.4); color:#ccff00; padding:8px 20px; border-radius:8px; font-family:monospace; font-size:11px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(204,255,0,0.3)'" onmouseout="this.style.background='rgba(204,255,0,0.15)'">
+                        🐘 НАЙТИ СЛОНЯРУ
+                    </button>
+                    <div style="font-family:monospace; font-size:10px; color:#444;">ищет «бот слоняра» → показывает 8 сообщений до + само сообщение</div>
+                    <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="slon-dl-name" placeholder="название файла..." style="background:#000; border:1px solid rgba(255,255,255,0.15); padding:6px 10px; border-radius:6px; color:#fff; font-family:monospace; font-size:11px; outline:none; width:160px;" onfocus="this.style.borderColor='#ccff00'" onblur="this.style.borderColor='rgba(255,255,255,0.15)'">
+                        <button onclick="SlonyaraTab.download()" style="background:#ccff00; color:#000; padding:7px 16px; border-radius:6px; border:none; font-family:monospace; font-size:11px; font-weight:bold; cursor:pointer;">СКАЧАТЬ</button>
+                    </div>
+                </div>
+
+                <!-- Output -->
+                <div style="flex:1; display:flex; overflow:hidden; background:#050505;">
+                    <textarea id="slon-output" readonly style="flex:1; background:transparent; padding:12px; font-family:'JetBrains Mono',monospace; font-size:12px; color:rgba(204,255,0,0.8); resize:none; outline:none; overflow:auto; white-space:pre;" placeholder="нажми «найти слоняру»..."></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+    </style>
+
+    <script>
+        // Init slonyara file upload
+        window.addEventListener('load', () => {
+            const dz = document.getElementById('slon-drop-zone');
+            const inp = document.getElementById('slon-file-input');
+            dz.onclick = () => inp.click();
+            inp.onchange = e => SlonyaraTab.handleFiles(e.target.files);
+            dz.ondragover = e => { e.preventDefault(); dz.style.borderColor='#ccff00'; dz.style.background='rgba(204,255,0,0.05)'; };
+            dz.ondragleave = () => { dz.style.borderColor='rgba(255,255,255,0.15)'; dz.style.background=''; };
+            dz.ondrop = e => { e.preventDefault(); dz.style.borderColor='rgba(255,255,255,0.15)'; dz.style.background=''; SlonyaraTab.handleFiles(e.dataTransfer.files); };
+        });
     </script>
 </body>
 </html>
