@@ -664,11 +664,6 @@
                     if(ci === -1) return null;
                     return line.substring(ci + chatTag.length).trim();
                 }
-                function hasBrackets(ct) {
-                    const o = ct.indexOf('[');
-                    return o !== -1 && ct.indexOf(']', o+1) !== -1;
-                }
-
                 for(let fi = 0; fi < fileNames.length; fi++) {
                     const fname = fileNames[fi];
                     const lines = this.files[fname];
@@ -683,11 +678,14 @@
                         for(let j=i; j<end; j++) {
                             const ct = getChatText(lines[j]);
                             if(ct === null) continue;
+                            // skip empty lines
+                            if(!ct.trim()) continue;
                             chatTexts[j] = ct;
                             const low = ct.toLowerCase();
                             if(low.includes(keyword)) {
                                 slonyaraIndices.push(j);
-                            } else if(hasBrackets(ct)) {
+                            } else if(ct.startsWith('[')) {
+                                // публичный чат: начинается с [РАНГ]
                                 validSet.add(j);
                             }
                         }
