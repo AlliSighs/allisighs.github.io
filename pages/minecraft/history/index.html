@@ -640,84 +640,98 @@
             },
 
             async process() {
-                if(!this.activeFile) return alert('нет файла');
-                const lines = this.files[this.activeFile];
+                // Determine which files to process: checked ones, or active file
+                const checkedCbs = Array.from(document.querySelectorAll('.slon-file-cb:checked'));
+                const fileNames = checkedCbs.length > 0
+                    ? checkedCbs.map(cb => cb.dataset.name).filter(n => this.files[n])
+                    : (this.activeFile ? [this.activeFile] : []);
+                if(!fileNames.length) return alert('нет файла');
+
                 document.getElementById('slon-proc-text').innerText = 'АНАЛИЗ...';
                 document.getElementById('slon-proc').style.display = 'flex';
                 document.getElementById('slon-proc-bar').style.width = '0%';
                 await new Promise(r => setTimeout(r, 20));
 
                 const BEFORE = 8;
-                const keyword = 'бот слоняра';
+                const keyword = 'антифлуд ▸ администратор бот слоняра';
+                const chatTag = '[CHAT]';
                 const result = [];
                 const batch = 10000;
+                let totalLines = 0, totalSlonyara = 0, totalShown = 0;
 
-                // Helper: extract chat text after [CHAT]
-                const chatTag = '[CHAT]';
                 function getChatText(line) {
                     const ci = line.indexOf(chatTag);
                     if(ci === -1) return null;
                     return line.substring(ci + chatTag.length).trim();
                 }
-                // Helper: does chat text contain at least one [...] pair?
                 function hasBrackets(ct) {
                     const o = ct.indexOf('[');
                     return o !== -1 && ct.indexOf(']', o+1) !== -1;
                 }
 
-                // Pre-filter: only lines with [CHAT] that have [...] in chat text
-                const chatTexts = new Array(lines.length).fill(null);
-                const validSet = new Set();
-                for(let i=0; i<lines.length; i+=batch) {
-                    const end = Math.min(i+batch, lines.length);
-                    for(let j=i; j<end; j++) {
-                        const ct = getChatText(lines[j]);
-                        if(ct !== null && hasBrackets(ct)) { chatTexts[j] = ct; validSet.add(j); }
+                for(let fi = 0; fi < fileNames.length; fi++) {
+                    const fname = fileNames[fi];
+                    const lines = this.files[fname];
+                    totalLines += lines.length;
+
+                    const chatTexts = new Array(lines.length).fill(null);
+                    const slonyaraIndices = [];
+                    const validSet = new Set();
+
+                    for(let i=0; i<lines.length; i+=batch) {
+                        const end = Math.min(i+batch, lines.length);
+                        for(let j=i; j<end; j++) {
+                            const ct = getChatText(lines[j]);
+                            if(ct === null) continue;
+                            chatTexts[j] = ct;
+                            const low = ct.toLowerCase();
+                            if(low.includes(keyword)) {
+                                slonyaraIndices.push(j);
+                            } else if(hasBrackets(ct)) {
+                                validSet.add(j);
+                            }
+                        }
+                        const pct = ((fi / fileNames.length) + (Math.min(i+batch, lines.length)/lines.length / fileNames.length)) * 70;
+                        document.getElementById('slon-proc-bar').style.width = pct + '%';
+                        await new Promise(r => setTimeout(r, 0));
                     }
-                    document.getElementById('slon-proc-bar').style.width = `${(Math.min(i+batch, lines.length)/lines.length)*35}%`;
-                    await new Promise(r => setTimeout(r, 0));
-                }
 
-                // Find slonyara among valid lines
-                const slonyaraIndices = [];
-                for(const idx of validSet) {
-                    if(chatTexts[idx].toLowerCase().includes(keyword)) slonyaraIndices.push(idx);
-                }
-                slonyaraIndices.sort((a,b) => a-b);
+                    totalSlonyara += slonyaraIndices.length;
 
-                document.getElementById('slon-proc-bar').style.width = '50%';
+                    const toShow = new Set();
+                    slonyaraIndices.forEach(idx => toShow.add(idx));
+                    const validArr = Array.from(validSet).sort((a,b) => a-b);
 
-                // 8 valid lines before each slonyara + slonyara itself
-                const toShow = new Set();
-                const validArr = Array.from(validSet).sort((a,b) => a-b);
-                for(const sIdx of slonyaraIndices) {
-                    let pos = validArr.indexOf(sIdx);
-                    const start = Math.max(0, pos - BEFORE);
-                    for(let k = start; k <= pos; k++) toShow.add(validArr[k]);
-                }
-
-                document.getElementById('slon-proc-bar').style.width = '75%';
-                await new Promise(r => setTimeout(r, 0));
-
-                // Collect in order
-                const sortedIndices = Array.from(toShow).sort((a,b) => a-b);
-
-                // Build output with separators between blocks
-                let prevIdx = null;
-                for(const idx of sortedIndices) {
-                    if(prevIdx !== null && idx > prevIdx + 1) {
-                        result.push('─────────────────────────────────────');
+                    for(const sIdx of slonyaraIndices) {
+                        let lo = 0, hi = validArr.length;
+                        while(lo < hi) { const mid = (lo+hi)>>1; if(validArr[mid] < sIdx) lo=mid+1; else hi=mid; }
+                        const start = Math.max(0, lo - BEFORE);
+                        for(let k = start; k < lo; k++) toShow.add(validArr[k]);
                     }
-                    const isSlonyara = chatTexts[idx].toLowerCase().includes(keyword);
-                    result.push((isSlonyara ? '🐘 ' : '') + chatTexts[idx]);
-                    prevIdx = idx;
+
+                    const sortedIndices = Array.from(toShow).sort((a,b) => a-b);
+                    totalShown += sortedIndices.length;
+
+                    if(fileNames.length > 1 && sortedIndices.length > 0) {
+                        result.push('═══════════ ' + fname + ' ═══════════');
+                    }
+
+                    let prevIdx = null;
+                    for(const idx of sortedIndices) {
+                        if(prevIdx !== null && idx > prevIdx + 1) {
+                            result.push('─────────────────────────────────────');
+                        }
+                        const isSlonyara = chatTexts[idx].toLowerCase().includes(keyword);
+                        result.push((isSlonyara ? '🐘 ' : '') + chatTexts[idx]);
+                        prevIdx = idx;
+                    }
                 }
 
                 document.getElementById('slon-proc-bar').style.width = '100%';
                 await new Promise(r => setTimeout(r, 100));
 
                 document.getElementById('slon-output').value = result.join('\n');
-                document.getElementById('slon-stats').innerText = `блоков: ${slonyaraIndices.length} | строк показано: ${sortedIndices.length} из ${lines.length}`;
+                document.getElementById('slon-stats').innerText = 'файлов: ' + fileNames.length + ' | блоков: ' + totalSlonyara + ' | строк показано: ' + totalShown + ' из ' + totalLines;
                 document.getElementById('slon-proc').style.display = 'none';
             },
 
