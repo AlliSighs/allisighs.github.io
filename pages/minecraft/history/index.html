@@ -678,16 +678,15 @@
                         for(let j=i; j<end; j++) {
                             const ct = getChatText(lines[j]);
                             if(ct === null) continue;
-                            // skip empty lines
                             if(!ct.trim()) continue;
                             chatTexts[j] = ct;
                             const low = ct.toLowerCase();
                             if(low.includes(keyword)) {
                                 slonyaraIndices.push(j);
                             } else if(ct.startsWith('[')) {
-                                // публичный чат: начинается с [РАНГ]
                                 validSet.add(j);
                             }
+                            // всё остальное (пати-чат и системные) — игнорируем
                         }
                         const pct = ((fi / fileNames.length) + (Math.min(i+batch, lines.length)/lines.length / fileNames.length)) * 70;
                         document.getElementById('slon-proc-bar').style.width = pct + '%';
@@ -714,14 +713,23 @@
                         result.push('═══════════ ' + fname + ' ═══════════');
                     }
 
-                    let prevIdx = null;
+                    // Build position map in validArr for separator logic
+                    const validPosMap = new Map();
+                    validArr.forEach((rawIdx, pos) => validPosMap.set(rawIdx, pos));
+
+                    let prevValidPos = null;
                     for(const idx of sortedIndices) {
-                        if(prevIdx !== null && idx > prevIdx + 1) {
-                            result.push('─────────────────────────────────────');
-                        }
                         const isSlonyara = chatTexts[idx].toLowerCase().includes(keyword);
+                        const curPos = isSlonyara ? null : validPosMap.get(idx);
+                        // separator if gap in validArr positions (different block)
+                        if(prevValidPos !== null && curPos !== null && curPos > prevValidPos + 1) {
+                            result.push('─────────────────────────────────────');
+                        } else if(prevValidPos !== null && curPos === null) {
+                            // slonyara line after context — no separator needed, it's the end of block
+                        }
                         result.push((isSlonyara ? '🐘 ' : '') + chatTexts[idx]);
-                        prevIdx = idx;
+                        if(curPos !== null) prevValidPos = curPos;
+                        else prevValidPos = null; // reset after slonyara
                     }
                 }
 
