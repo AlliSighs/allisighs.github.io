@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lore art</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  body{
+    background:#0f37f5;
+    color:#fff;
+    font-family:Arial, Helvetica, sans-serif;
+    font-size:17px;
+    min-height:100vh;
+    padding:28px 24px 90px;
+    display:flex;
+    justify-content:center;
+  }
+
+  .col{
+    width:100%;
+    max-width:430px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:52px;
+  }
+
+  .drop, .slide, .chain, .result, .trash, .flags{
+    position:relative;
+    z-index:60;
+  }
+
+  .prev{z-index:10}
+
+  .lbl{text-align:center;opacity:.8;font-size:15px;margin-bottom:-38px;width:100%}
+
+  .warn{
+    position:relative;
+    z-index:60;
+    width:100%;
+    max-width:360px;
+    padding:0 10px;
+    text-align:center;
+    font-size:13px;
+    line-height:1.55;
+    color:#fff;
+    opacity:.72;
+  }
+  .warn:empty{display:none}
+
+  .flags{
+    position:relative;
+    z-index:960;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:-20px;
+  }
+  .flag{
+    width:44px;
+    height:30px;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    background:none;
+    opacity:.45;
+    border-radius:44% 56% 48% 52% / 47% 45% 55% 53%;
+    overflow:hidden;
+  }
+  .flag:hover{opacity:.8}
+  .flag.on{opacity:1;outline:2px solid rgba(255,255,255,.9);outline-offset:2px}
+  .flag svg{display:block;width:100%;height:100%}
+
+  .drop{
+    position:relative;
+    display:block;
+    width:100%;
+    border:none;
+    background:transparent;
+    padding:0;
+    cursor:pointer;
+    font:inherit;
+    color:#fff;
+  }
+  .drop::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:rgba(255,255,255,.16);
+    backdrop-filter:blur(3px) brightness(1.16) saturate(1.3);
+    -webkit-backdrop-filter:blur(3px) brightness(1.16) saturate(1.3);
+    border-radius:inherit;
+    z-index:0;
+  }
+  .drop::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    border-top:1.5px solid rgba(255,255,255,.75);
+    border-left:1px solid rgba(255,255,255,.45);
+    border-right:1px solid rgba(255,255,255,.2);
+    border-bottom:1.5px solid rgba(255,255,255,.5);
+    pointer-events:none;
+    z-index:1;
+  }
+  .glare{
+    position:absolute;
+    top:12%;left:14%;
+    width:26%;height:30%;
+    background:rgba(255,255,255,.55);
+    border-radius:50%;
+    filter:blur(4px);
+    pointer-events:none;
+    z-index:2;
+  }
+  .glare.sm{
+    top:24%;left:auto;right:16%;
+    width:8%;height:12%;
+    background:rgba(255,255,255,.4);
+    filter:blur(2px);
+  }
+  .drop .in{
+    position:relative;
+    z-index:3;
+    display:block;
+    width:100%;
+    padding:17px 26px;
+    text-align:center;
+    border:none;
+    background:transparent;
+    color:#fff;
+    font:inherit;
+    outline:none;
+  }
+  button.drop:hover::before{background:rgba(255,255,255,.24)}
+  button.drop:active::before{background:rgba(255,255,255,.1)}
+  button.drop:disabled{opacity:.4;cursor:default}
+
+  .s1{border-radius:44% 56% 48% 52% / 47% 45% 55% 53%}
+  .s2{border-radius:53% 47% 45% 55% / 52% 55% 45% 48%}
+  .s3{border-radius:47% 53% 54% 46% / 45% 48% 52% 55%}
+  .s4{border-radius:55% 45% 46% 54% / 53% 46% 54% 47%}
+  .s5{border-radius:46% 54% 52% 48% / 55% 52% 48% 45%}
+  .s6{border-radius:52% 48% 46% 54% / 46% 54% 46% 54%}
+
+  .drop.inp .in{
+    cursor:text;
+    border:none;
+    padding:17px 0 20px;
+    width:calc(100% - 76px);
+    margin:0 38px;
+    background-repeat:no-repeat;
+    background-position:center bottom 6px;
+    background-size:100% 8px;
+    background-image:url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8' preserveAspectRatio='none'>\
+<path d='M6,1.6 C46,6.4 154,6.4 194,1.6' fill='none' stroke='%23ffffff' stroke-opacity='0.6' \
+stroke-width='1.6' stroke-linecap='round' stroke-dasharray='0.1 5'/></svg>");
+  }
+  .drop.inp .in::placeholder{color:rgba(255,255,255,.65)}
+  .drop.inp:focus-within::before{background:rgba(255,255,255,.26)}
+  .drop.inp:focus-within .in{
+    background-image:url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 8' preserveAspectRatio='none'>\
+<path d='M6,1.6 C46,6.4 154,6.4 194,1.6' fill='none' stroke='%23ffffff' stroke-opacity='0.95' \
+stroke-width='1.6' stroke-linecap='round'/></svg>");
+  }
+
+  .drop.inp textarea.in{
+    padding-top:15px;
+    padding-bottom:18px;
+    background-position:center bottom 5px;
+  }
+
+  textarea.in{resize:none;min-height:76px;line-height:1.5;font-family:inherit}
+
+  .slide{
+    position:relative;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+  }
+  .slide .lbl{
+    position:absolute;
+    top:9px;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index:5;
+    margin:0;
+    width:auto;
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:1;
+    font-size:15px;
+    color:#fff;
+    text-shadow:
+      -1px -1px 0 #0f37f5,  1px -1px 0 #0f37f5,
+      -1px  1px 0 #0f37f5,  1px  1px 0 #0f37f5,
+       0   -1px 0 #0f37f5,  0    1px 0 #0f37f5,
+      -1px  0   0 #0f37f5,  1px  0   0 #0f37f5;
+  }
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:18px;
+    background:rgba(255,255,255,.16);
+    border-radius:48% 52% 46% 54% / 50%;
+    border-top:1px solid rgba(255,255,255,.4);
+    outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:34px;height:34px;
+    background:rgba(255,255,255,.35);
+    backdrop-filter:blur(2px) brightness(1.3);
+    -webkit-backdrop-filter:blur(2px) brightness(1.3);
+    border:1.5px solid rgba(255,255,255,.85);
+    border-bottom-color:rgba(255,255,255,.5);
+    border-radius:47% 53% 52% 48% / 51% 46% 54% 49%;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:34px;height:34px;
+    background:rgba(255,255,255,.35);
+    border:1.5px solid rgba(255,255,255,.85);
+    border-radius:47% 53% 52% 48% / 51% 46% 54% 49%;
+    cursor:pointer;
+  }
+  .num{opacity:.85;text-align:center;line-height:1.5}
+
+  .chain{
+    position:relative;
+    z-index:950;
+    width:100%;
+    max-width:340px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+  }
+  .chain .warn{margin-top:14px}
+  .chain .drop{max-width:320px}
+
+  .link{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    padding:8px 0;
+  }
+  .link i{
+    display:block;
+    background:rgba(255,255,255,.4);
+    border-top:1px solid rgba(255,255,255,.7);
+  }
+  .link i:nth-child(1){width:9px;height:9px;border-radius:50% 50% 46% 54% / 44% 44% 56% 56%}
+  .link i:nth-child(2){width:6px;height:6px;border-radius:50% 50% 45% 55% / 45% 45% 55% 55%;opacity:.75}
+  .link i:nth-child(3){width:4px;height:4px;border-radius:50%;opacity:.55}
+
+  .status{
+    max-width:340px;
+    padding:4px 0;
+    text-align:center;
+    line-height:1.4;
+    font-size:15px;
+    opacity:.9;
+  }
+  .status.err{color:#ffd0d8;opacity:1}
+
+  .result{
+    width:100%;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+  }
+  .result.on{display:flex}
+
+  .cmd{
+    position:relative;
+    width:100%;
+    cursor:pointer;
+    border:none;
+    padding:0;
+    font:inherit;
+    color:#fff;
+    text-align:left;
+    border-radius:40px 44px 38px 46px / 34px 38px 36px 32px;
+  }
+  .cmd::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:rgba(255,255,255,.15);
+    backdrop-filter:blur(3px) brightness(1.16) saturate(1.3);
+    -webkit-backdrop-filter:blur(3px) brightness(1.16) saturate(1.3);
+    border-radius:inherit;
+    z-index:0;
+  }
+  .cmd::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    border-top:1.5px solid rgba(255,255,255,.7);
+    border-bottom:1.5px solid rgba(255,255,255,.45);
+    border-left:1px solid rgba(255,255,255,.35);
+    border-right:1px solid rgba(255,255,255,.2);
+    pointer-events:none;
+    z-index:1;
+  }
+  .cmd:hover::before{background:rgba(255,255,255,.24)}
+  .cmd:active::before{background:rgba(255,255,255,.1)}
+  .cmd .txt{
+    position:relative;
+    z-index:3;
+    display:block;
+    padding:22px 26px 14px;
+    font-family:'Courier New',monospace;
+    font-size:12px;
+    line-height:1.5;
+    max-height:130px;
+    overflow:auto;
+    white-space:pre-wrap;
+    word-break:break-all;
+  }
+  .cmd .tap{
+    position:relative;
+    z-index:3;
+    display:block;
+    padding:0 26px 20px;
+    text-align:center;
+    font-family:Arial,sans-serif;
+    font-size:14px;
+    opacity:.75;
+  }
+
+  .prog{width:100%;display:none;flex-direction:column;align-items:center;gap:14px}
+  .prog.on{display:flex}
+  .pb{
+    width:100%;height:18px;
+    background:rgba(255,255,255,.14);
+    border-top:1px solid rgba(255,255,255,.35);
+    border-radius:48% 52% 46% 54% / 50%;
+    overflow:hidden;
+  }
+  .pb i{display:block;height:100%;width:0;background:rgba(255,255,255,.75);border-radius:inherit}
+
+  .prev{
+    position:relative;
+    z-index:10;
+    display:flex;
+    justify-content:center;
+    width:100%;
+    min-height:150px;
+  }
+  .info{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index:40;
+    text-align:center;
+    line-height:1.6;
+    font-size:15px;
+    pointer-events:none;
+    color:#fff;
+    text-shadow:
+      -1px -1px 0 #4fc3ff,  1px -1px 0 #4fc3ff,
+      -1px  1px 0 #4fc3ff,  1px  1px 0 #4fc3ff,
+       0   -1px 0 #4fc3ff,  0    1px 0 #4fc3ff,
+      -1px  0   0 #4fc3ff,  1px  0   0 #4fc3ff;
+  }
+  .info:empty{display:none}
+
+  .inv{
+    position:relative;
+    background:#c6c6c6;
+    border-top:2px solid #ffffff;
+    border-left:2px solid #ffffff;
+    border-right:2px solid #555555;
+    border-bottom:2px solid #555555;
+    padding:8px;
+  }
+  .invt{
+    font-family:'Courier New',monospace;
+    font-size:12px;color:#404040;
+    margin-bottom:6px;
+  }
+  .grid{display:grid;grid-template-columns:repeat(9,32px);gap:2px}
+  .grid.hot{margin-top:8px}
+  .cell{
+    width:32px;height:32px;
+    background:#8b8b8b;
+    border-top:2px solid #373737;
+    border-left:2px solid #373737;
+    border-right:2px solid #ffffff;
+    border-bottom:2px solid #ffffff;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .cell.sel{background:#c5c5c5}
+  .cell img{width:26px;height:26px;image-rendering:pixelated}
+
+  .cur{position:absolute;width:0;height:0;pointer-events:none;z-index:20}
+
+  .tip{
+    position:absolute;z-index:15;
+    background:#100010;
+    border:2px solid #4b0082;
+    padding:5px;
+    font-family:'Courier New',monospace;
+    white-space:nowrap;
+    image-rendering:pixelated;
+    pointer-events:none;
+  }
+  .tip .ln{
+    display:block;
+    font-size:11px;
+    line-height:1.15;
+    padding:3px 0;
+  }
+  .tip .ln + .ln{margin-top:6px}
+  .tip .ln span{display:inline;vertical-align:baseline}
+  .tip .gp{display:block;height:8px}
+  .tip canvas.ar{
+    display:block;
+    image-rendering:pixelated;
+    margin-bottom:6px;
+  }
+
+  .trash{
+    position:relative;
+    width:100%;
+    height:150px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .binwrap{
+    position:relative;
+    width:140px;
+    height:140px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .ring{
+    position:absolute;
+    inset:0;
+    width:140px;
+    height:140px;
+    pointer-events:none;
+    z-index:1;
+    animation:spin 30s linear infinite;
+  }
+  @keyframes spin{
+    from{transform:rotate(0deg)}
+    to{transform:rotate(360deg)}
+  }
+  .ring text{
+    fill:#fff;
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:13px;
+    font-weight:bold;
+    opacity:.85;
+  }
+  .binwrap:hover .ring text{opacity:1}
+
+  .bin{
+    position:relative;
+    width:28px;
+    height:30px;
+    border:none;
+    background:none;
+    padding:0;
+    cursor:pointer;
+    z-index:2;
+  }
+  .bin svg{display:block;width:100%;height:100%}
+  .bin:hover svg{opacity:.85}
+
+  .bindrop{
+    position:absolute;
+    left:50%;
+    top:32px;
+    margin-left:-16px;
+    width:13px;
+    height:17px;
+    background:rgba(255,255,255,.3);
+    border-top:1.5px solid rgba(255,255,255,.9);
+    border-left:1px solid rgba(255,255,255,.5);
+    border-right:1px solid rgba(255,255,255,.3);
+    border-bottom:1px solid rgba(255,255,255,.4);
+    backdrop-filter:blur(2px) brightness(1.4);
+    -webkit-backdrop-filter:blur(2px) brightness(1.4);
+    border-radius:48% 52% 44% 56% / 42% 44% 56% 58%;
+    pointer-events:none;
+    z-index:3;
+  }
+  .binwrap:hover .bindrop{animation:miss .9s ease-in forwards}
+  .trash.spill .bindrop{animation:miss .9s ease-in forwards}
+
+  @keyframes miss{
+    0%{transform:translate(0,0) rotate(0deg) scale(1);opacity:1}
+    55%{transform:translate(9px,26px) rotate(16deg) scale(.95);opacity:1}
+    75%{transform:translate(17px,38px) rotate(30deg) scale(.8);opacity:.85}
+    100%{transform:translate(24px,48px) rotate(44deg) scale(.4);opacity:0}
+  }
+
+  #rain{
+    position:fixed;
+    inset:0;
+    z-index:900;
+    display:none;
+    pointer-events:none;
+    overflow:hidden;
+    background:rgba(15,55,245,.55);
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+  }
+  #rain.on{display:block;pointer-events:none}
+
+  .rd{
+    position:absolute;
+    background:rgba(255,255,255,.3);
+    border-top:1.5px solid rgba(255,255,255,.9);
+    border-bottom:1px solid rgba(255,255,255,.4);
+    border-left:1px solid rgba(255,255,255,.5);
+    border-right:1px solid rgba(255,255,255,.35);
+    backdrop-filter:blur(2px) brightness(1.4);
+    -webkit-backdrop-filter:blur(2px) brightness(1.4);
+    will-change:transform,opacity;
+    animation:fall linear infinite;
+  }
+  @keyframes fall{
+    0%{transform:translate3d(0,-14vh,0) scale(.5);opacity:0}
+    12%{opacity:1}
+    88%{opacity:1}
+    100%{transform:translate3d(var(--dx,0px),112vh,0) scale(1);opacity:0}
+  }
+  .rtext{
+    position:fixed;
+    left:0;right:0;
+    top:50%;
+    z-index:920;
+    transform:translateY(-50%);
+    text-align:center;
+    font-size:18px;
+    line-height:1.6;
+    pointer-events:none;
+  }
+
+  a{color:#fff}
+  .quiet{opacity:.65;font-size:14px;text-align:center;line-height:1.7}
+  .tiny{opacity:.6;font-size:13px;text-align:center;margin-top:-38px;line-height:1.5}
+
+  ::-webkit-scrollbar{width:8px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.5);border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<div id="rain">
+  <div class="rtext" id="rtext"></div>
+</div>
+
+<div class="col">
+
+  <div class="flags">
+    <button class="flag" id="fl-uk" title="Українська">
+      <svg viewBox="0 0 60 40"><rect width="60" height="20" fill="#0057b7"/><rect y="20" width="60" height="20" fill="#ffd700"/></svg>
+    </button>
+    <button class="flag" id="fl-en" title="English">
+      <svg viewBox="0 0 60 40">
+        <rect width="60" height="40" fill="#fff"/>
+        <g fill="#b22234"><rect y="0" width="60" height="3"/><rect y="6" width="60" height="3"/><rect y="12" width="60" height="3"/><rect y="18" width="60" height="3"/><rect y="24" width="60" height="3"/><rect y="30" width="60" height="3"/><rect y="36" width="60" height="3"/></g>
+        <rect width="26" height="21" fill="#3c3b6e"/>
+      </svg>
+    </button>
+    <button class="flag" id="fl-ru" title="Русский">
+      <svg viewBox="0 0 60 40"><rect width="60" height="13.3" fill="#fff"/><rect y="13.3" width="60" height="13.3" fill="#0039a6"/><rect y="26.6" width="60" height="13.4" fill="#d52b1e"/></svg>
+    </button>
+  </div>
+
+  <input type="file" id="file" accept="image/*" hidden>
+  <button class="drop s1" id="pick">
+    <span class="glare"></span><span class="glare sm"></span>
+    <span class="in" id="t-pick">Выбрать картинку</span>
+  </button>
+
+  <div class="slide">
+    <input type="range" id="size" min="4" max="40" value="16">
+    <div class="lbl" id="t-size">Размер картинки в игре</div>
+    <div class="num" id="num"></div>
+  </div>
+
+  <label class="drop inp s2">
+    <span class="glare"></span><span class="glare sm"></span>
+    <input type="text" class="in" id="name" maxlength="120">
+  </label>
+
+  <label class="drop inp s3">
+    <span class="glare"></span><span class="glare sm"></span>
+    <textarea class="in" id="desc"></textarea>
+  </label>
+  <div class="tiny" id="t-codes"></div>
+
+  <div class="lbl" id="t-item">ID предмета</div>
+  <label class="drop inp s4">
+    <span class="glare"></span><span class="glare sm"></span>
+    <input type="text" class="in" id="item" value="paper" spellcheck="false" placeholder="paper">
+  </label>
+
+  <label class="drop inp s5">
+    <span class="glare"></span><span class="glare sm"></span>
+    <input type="password" class="in" id="key" autocomplete="off">
+  </label>
+
+  <div class="prev">
+    <div class="inv" id="inv">
+      <div class="invt" id="t-inv">Инвентарь</div>
+      <div class="grid" id="main"></div>
+      <div class="grid hot" id="hot"></div>
+      <div class="tip" id="tip"></div>
+      <div class="cur" id="cur">
+        <svg width="14" height="21" viewBox="0 0 8 12">
+          <path d="M0.4 0.4 L0.4 9.6 L2.4 7.9 L3.9 11.4 L5.4 10.7 L4 7.3 L6.6 7.3 Z"
+                fill="#fff" stroke="#000" stroke-width=".8" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="info" id="info"></div>
+  </div>
+
+  <div class="chain">
+    <button class="drop s6" id="go" disabled>
+      <span class="glare"></span><span class="glare sm"></span>
+      <span class="in" id="t-go">Создать</span>
+    </button>
+    <div class="link"><i></i><i></i><i></i></div>
+    <div class="status" id="status"></div>
+    <div class="warn" id="t-limit"></div>
+  </div>
+
+  <div class="prog" id="prog">
+    <div class="pb"><i id="fill"></i></div>
+    <div class="num" id="pnow">0 / 0</div>
+  </div>
+
+  <div class="result" id="result">
+    <button class="cmd" id="cmdbox">
+      <span class="glare"></span><span class="glare sm"></span>
+      <span class="txt" id="out"></span>
+      <span class="tap" id="tap"></span>
+    </button>
+  </div>
+
+  <div class="trash" id="trash">
+    <div class="binwrap">
+      <svg class="ring" viewBox="0 0 140 140" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+          <path id="ringpath" fill="none"
+                d="M70,14
+                   C102,14 127,39 127,70
+                   C127,102 102,126 70,126
+                   C38,126 13,102 13,70
+                   C13,38 38,14 70,14 Z"/>
+        </defs>
+        <text>
+          <textPath href="#ringpath" xlink:href="#ringpath"
+                    startOffset="50%" text-anchor="middle"
+                    textLength="328" lengthAdjust="spacing"
+                    id="ringtext"></textPath>
+        </text>
+      </svg>
+
+      <div class="bindrop"></div>
+
+      <button class="bin" id="bin">
+        <svg viewBox="0 0 40 42">
+          <rect x="6" y="12" width="28" height="28" rx="3" fill="none" stroke="#fff" stroke-width="2.5" opacity=".85"/>
+          <path d="M3 9 h34" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>
+          <path d="M15 9 v-4 h10 v4" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity=".85"/>
+          <path d="M15 19 v14 M20 19 v14 M25 19 v14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="quiet" id="t-foot"></div>
+
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+const L={
+  ru:{
+    pick:'Выбрать картинку', size:'Размер картинки в игре', noimg:'пока не выбрана',
+    name:'Название предмета', desc:'Описание под картинкой',
+    codes:'цвет через &-коды: &6золотой &bголубой &lжирный',
+    item:'ID предмета', key:'Ключ MineSkin', inv:'Инвентарь',
+    go:'Создать', going:'Создаю…', tap:'нажмите, чтобы скопировать', copied:'скопировано',
+    needimg:'Выберите картинку', needkey:'Нужен ключ MineSkin', ready:'Можно создавать',
+    opening:'Открываю…', loading:'Загружаю: ', of:' из ',
+    done:'Готово - команда ниже', badimg:'Это не картинка', badopen:'Не удалось открыть',
+    nonet:'нет соединения с сервером', pieces:'нужно загрузить ', pcs:' кусочков',
+    time:'это займёт около ', sec:' секунд', min:' минут',
+    w:'ширина ', h:'высота ', px:' точек',
+    foot:'Работает в Minecraft 1.21.9 и новее', getkey:'получить ключ MineSkin',
+    cleared:'Очищено', ring:'ОПУСТОШИТЬ',
+    stop:'Стоп', stopping:'Останавливаю…', stopped:'Остановлено',
+    waiting:'Лимит исчерпан. Жду сброса: ',
+    saved:'Загруженное сохранено - можно продолжить позже',
+    limit:'Одна картинка в час. Это ограничение MineSkin - сервиса, который выдаёт текстуры. Не наше.',
+    capped:'размер ограничен, чтобы уложиться в 60 кусочков'
+  },
+  uk:{
+    pick:'Обрати зображення', size:'Розмір зображення у грі', noimg:'ще не обрано',
+    name:'Назва предмета', desc:'Опис під зображенням',
+    codes:'колір через &-коди: &6золотий &bблакитний &lжирний',
+    item:'ID предмета', key:'Ключ MineSkin', inv:'Інвентар',
+    go:'Створити', going:'Створюю…', tap:'натисніть, щоб скопіювати', copied:'скопійовано',
+    needimg:'Оберіть зображення', needkey:'Потрібен ключ MineSkin', ready:'Можна створювати',
+    opening:'Відкриваю…', loading:'Завантажую: ', of:' з ',
+    done:'Готово - команда нижче', badimg:'Це не зображення', badopen:'Не вдалося відкрити',
+    nonet:'немає з\u2019єднання з сервером', pieces:'треба завантажити ', pcs:' шматочків',
+    time:'це займе близько ', sec:' секунд', min:' хвилин',
+    w:'ширина ', h:'висота ', px:' точок',
+    foot:'Працює в Minecraft 1.21.9 і новіше', getkey:'отримати ключ MineSkin',
+    cleared:'Очищено', ring:'СПОРОЖНИТИ',
+    stop:'Стоп', stopping:'Зупиняю…', stopped:'Зупинено',
+    waiting:'Ліміт вичерпано. Чекаю скидання: ',
+    saved:'Завантажене збережено - можна продовжити пізніше',
+    limit:'Одна картинка на годину. Це обмеження MineSkin - сервісу, що видає текстури. Не наше.',
+    capped:'розмір обмежено, щоб вкластися в 60 шматочків'
+  },
+  en:{
+    pick:'Choose image', size:'Image size in game', noimg:'not chosen yet',
+    name:'Item name', desc:'Description below image',
+    codes:'colour via &-codes: &6gold &baqua &lbold',
+    item:'Item ID', key:'MineSkin key', inv:'Inventory',
+    go:'Create', going:'Creating…', tap:'click to copy', copied:'copied',
+    needimg:'Choose an image', needkey:'MineSkin key required', ready:'Ready to create',
+    opening:'Opening…', loading:'Uploading: ', of:' of ',
+    done:'Done - command below', badimg:'Not an image', badopen:'Could not open',
+    nonet:'no connection to server', pieces:'need to upload ', pcs:' pieces',
+    time:'takes about ', sec:' seconds', min:' minutes',
+    w:'width ', h:'height ', px:' px',
+    foot:'Works in Minecraft 1.21.9 and newer', getkey:'get MineSkin key',
+    cleared:'Cleared', ring:'EMPTY IT',
+    stop:'Stop', stopping:'Stopping…', stopped:'Stopped',
+    waiting:'Rate limit hit. Waiting: ',
+    saved:'Progress saved - you can continue later',
+    limit:'One image per hour. This is a MineSkin limit - the service that issues textures. Not ours.',
+    capped:'size capped to fit within 60 pieces'
+  }
+};
+
+let lang='ru';
+let T=L.ru;
+let fileName='';
+
+const SAVE='loreart_v1';
+
+function store(){
+  try{
+    localStorage.setItem(SAVE,JSON.stringify({
+      lang:lang,
+      name:$('name').value,
+      desc:$('desc').value,
+      item:$('item').value,
+      size:$('size').value,
+      key:$('key').value
+    }));
+  }catch(e){}
+}
+
+function restore(){
+  let d=null;
+  try{ d=JSON.parse(localStorage.getItem(SAVE)||'null') }catch(e){}
+  if(!d) return;
+  if(d.lang && L[d.lang]) lang=d.lang;
+  if(typeof d.name==='string') $('name').value=d.name;
+  if(typeof d.desc==='string') $('desc').value=d.desc;
+  if(typeof d.item==='string' && d.item) $('item').value=d.item;
+  if(d.size) $('size').value=d.size;
+  if(typeof d.key==='string') $('key').value=d.key;
+}
+
+function applyLang(){
+  T=L[lang];
+  document.documentElement.lang=lang;
+
+  $('t-pick').textContent = fileName || T.pick;
+  $('t-size').textContent=T.size;
+  $('t-item').textContent=T.item;
+  $('t-inv').textContent=T.inv;
+  $('t-codes').textContent=T.codes;
+  $('t-go').textContent = busy ? T.going : T.go;
+  $('tap').textContent=T.tap;
+  $('name').placeholder=T.name;
+  $('desc').placeholder=T.desc;
+  $('key').placeholder=T.key;
+  $('t-foot').innerHTML=T.foot+'<br><a href="https://mineskin.org/" target="_blank" rel="noopener">'+T.getkey+'</a>';
+  $('ringtext').textContent=T.ring;
+  $('t-limit').textContent=T.limit;
+
+  ['uk','en','ru'].forEach(k=>{
+    $('fl-'+k).classList.toggle('on',k===lang);
+  });
+
+  stats();
+  refreshStatus();
+  if(img) render();
+}
+
+['uk','en','ru'].forEach(k=>{
+  $('fl-'+k).onclick=()=>{ lang=k; applyLang(); store(); };
+});
+
+let img=null, imgW=0, imgH=0, cols=0, rows=0, textures=[], busy=false, cmd='';
+let baseCanvas=null, hashes=[];
+let stopped=false;
+
+const TEXKEY='loreart_tex_v1';
+let texStore={};
+
+function loadTexStore(){
+  try{ texStore=JSON.parse(localStorage.getItem(TEXKEY)||'{}') }
+  catch(e){ texStore={} }
+}
+
+function saveTexStore(){
+  try{ localStorage.setItem(TEXKEY,JSON.stringify(texStore)) }
+  catch(e){
+    texStore={};
+    try{ localStorage.setItem(TEXKEY,'{}') }catch(e2){}
+  }
+}
+
+loadTexStore();
+
+const MCV='26.2';
+const REPO='PixiGeko/Minecraft-default-assets';
+const CDN=[
+  n=>'https://raw.githubusercontent.com/'+REPO+'/'+MCV+'/assets/minecraft/textures/item/'+n+'.png',
+  n=>'https://cdn.jsdelivr.net/gh/'+REPO+'@'+MCV+'/assets/minecraft/textures/item/'+n+'.png',
+  n=>'https://cdn.statically.io/gh/'+REPO+'/'+MCV+'/assets/minecraft/textures/item/'+n+'.png',
+  n=>'https://raw.githubusercontent.com/'+REPO+'/'+MCV+'/assets/minecraft/textures/block/'+n+'.png',
+  n=>'https://cdn.jsdelivr.net/gh/'+REPO+'@'+MCV+'/assets/minecraft/textures/block/'+n+'.png'
+];
+
+const FALLBACK='data:image/svg+xml;base64,'+btoa(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" shape-rendering="crispEdges">'+
+  '<rect x="2" y="2" width="12" height="12" fill="none" stroke="#7a7a7a" stroke-width="1"/>'+
+  '<path d="M2 2 L14 14 M14 2 L2 14" stroke="#7a7a7a" stroke-width="1"/></svg>');
+
+const texCache=new Map();
+let texToken=0;
+
+async function loadItemTexture(el,raw){
+  const name=String(raw||'').trim()
+    .replace(/^minecraft:/,'')
+    .replace(/[^a-z0-9_]/gi,'')
+    .toLowerCase();
+
+  const my=++texToken;
+  if(!name){ el.src=FALLBACK; return }
+
+  if(texCache.has(name)){
+    if(my===texToken) el.src=texCache.get(name);
+    return;
+  }
+
+  for(let i=0;i<CDN.length;i++){
+    try{
+      const r=await fetch(CDN[i](name),{cache:'force-cache'});
+      if(!r.ok) continue;
+      const b=await r.blob();
+      if(!b.type.startsWith('image/')) continue;
+      const u=URL.createObjectURL(b);
+      texCache.set(name,u);
+      if(my===texToken) el.src=u;
+      return;
+    }catch(e){}
+  }
+  if(my===texToken) el.src=FALLBACK;
+}
+
+let rainMade=false;
+
+function makeRain(){
+  if(rainMade) return;
+  const box=$('rain');
+  for(let i=0;i<48;i++){
+    const d=document.createElement('div');
+    d.className='rd';
+    const w=6+Math.random()*26;
+    d.style.width=w+'px';
+    d.style.height=(w*(1+Math.random()*.5))+'px';
+    d.style.left=(Math.random()*100)+'%';
+    d.style.setProperty('--dx',(Math.random()*70-35)+'px');
+    const r=()=>(42+Math.random()*16).toFixed(0);
+    d.style.borderRadius=r()+'% '+r()+'% '+r()+'% '+r()+'% / '+r()+'% '+r()+'% '+r()+'% '+r()+'%';
+    d.style.animationDuration=(1.6+Math.random()*2.6)+'s';
+    d.style.animationDelay=(-Math.random()*4)+'s';
+    d.style.opacity=(.45+Math.random()*.5).toFixed(2);
+    box.appendChild(d);
+  }
+  rainMade=true;
+}
+
+function rain(on,txt){
+  makeRain();
+  const b=$('rain');
+  if(on){
+    b.classList.add('on');
+    if(txt) $('rtext').textContent=txt;
+  }else{
+    b.classList.remove('on');
+    $('rtext').textContent='';
+  }
+}
+
+const CODE={'0':'black','1':'dark_blue','2':'dark_green','3':'dark_aqua','4':'dark_red',
+  '5':'dark_purple','6':'gold','7':'gray','8':'dark_gray','9':'blue','a':'green',
+  'b':'aqua','c':'red','d':'light_purple','e':'yellow','f':'white'};
+const HEX={black:'#000000',dark_blue:'#0000AA',dark_green:'#00AA00',dark_aqua:'#00AAAA',
+  dark_red:'#AA0000',dark_purple:'#AA00AA',gold:'#FFAA00',gray:'#AAAAAA',
+  dark_gray:'#555555',blue:'#5555FF',green:'#55FF55',aqua:'#55FFFF',red:'#FF5555',
+  light_purple:'#FF55FF',yellow:'#FFFF55',white:'#FFFFFF'};
+
+function parseAmp(str,baseItalic){
+  const out=[];
+  let cur={color:'white',bold:false,italic:!!baseItalic,underlined:false,
+           strikethrough:false,obfuscated:false};
+  let buf='';
+
+  const flush=()=>{
+    if(!buf) return;
+    const c={text:buf,color:cur.color,italic:cur.italic};
+    if(cur.bold) c.bold=true;
+    if(cur.underlined) c.underlined=true;
+    if(cur.strikethrough) c.strikethrough=true;
+    if(cur.obfuscated) c.obfuscated=true;
+    out.push(c);
+    buf='';
+  };
+
+  for(let i=0;i<str.length;i++){
+    const ch=str[i];
+    if((ch==='&'||ch==='\u00a7') && i+1<str.length){
+      const k=str[i+1].toLowerCase();
+      if(CODE[k]){
+        flush();
+        cur.color=CODE[k];
+        cur.bold=cur.underlined=cur.strikethrough=cur.obfuscated=false;
+        cur.italic=!!baseItalic;
+        i++; continue;
+      }
+      if(k==='l'){ flush(); cur.bold=true; i++; continue }
+      if(k==='n'){ flush(); cur.underlined=true; i++; continue }
+      if(k==='m'){ flush(); cur.strikethrough=true; i++; continue }
+      if(k==='o'){ flush(); cur.italic=true; i++; continue }
+      if(k==='k'){ flush(); cur.obfuscated=true; i++; continue }
+      if(k==='r'){
+        flush();
+        cur={color:'white',bold:false,italic:!!baseItalic,underlined:false,
+             strikethrough:false,obfuscated:false};
+        i++; continue;
+      }
+    }
+    buf+=ch;
+  }
+  flush();
+  if(!out.length) out.push({text:'',color:'white',italic:!!baseItalic});
+  return out;
+}
+
+function ampToHtml(str,baseItalic){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return parseAmp(str,baseItalic).map(c=>{
+    let st='color:'+(HEX[c.color]||'#fff')+';';
+    if(c.italic) st+='font-style:italic;';
+    if(c.bold) st+='font-weight:bold;';
+    const d=[];
+    if(c.underlined) d.push('underline');
+    if(c.strikethrough) d.push('line-through');
+    if(d.length) st+='text-decoration:'+d.join(' ')+';';
+    return '<span style="'+st+'">'+esc(c.text)+'</span>';
+  }).join('');
+}
+
+const API='https://api.mineskin.org/v2/generate';
+const PROXY=[
+  u=>u,
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u),
+  u=>'https://proxy.cors.sh/'+u,
+  u=>'https://thingproxy.freeboard.io/fetch/'+u,
+  u=>'https://cors-anywhere.herokuapp.com/'+u
+];
+let good=null;
+
+async function call(body,key,i){
+  const r=await fetch(PROXY[i](API),{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json',
+             'Authorization':'Bearer '+key},
+    body:JSON.stringify(body)
+  });
+
+  let reset=0;
+  try{
+    const h=r.headers.get('X-RateLimit-Reset');
+    if(h) reset=parseInt(h,10);
+  }catch(e){}
+
+  const t=await r.text();
+  let j;
+  try{ j=JSON.parse(t) }catch(e){ throw new Error('no json') }
+
+  if(j.success===true||j.success==='true'){
+    const v=j.skin&&j.skin.texture&&j.skin.texture.data&&j.skin.texture.data.value;
+    if(!v) throw new Error('empty');
+    return v;
+  }
+
+  const msg=j.error||(j.errors&&j.errors[0]&&j.errors[0].message)||'error';
+  const e=new Error(msg);
+  e.api=true;
+
+  if(r.status===429 || /rate limit/i.test(msg)){
+    e.rate=true;
+    e.reset=reset;
+  }
+  throw e;
+}
+
+async function upload(url,name,key){
+  const body={variant:'classic',name:name,visibility:'unlisted',url:url};
+  if(good!==null){
+    try{ return await call(body,key,good) }
+    catch(e){ if(e.api) throw e; good=null }
+  }
+  for(let i=0;i<PROXY.length;i++){
+    try{
+      const v=await call(body,key,i);
+      good=i;
+      return v;
+    }catch(e){ if(e.api) throw e }
+  }
+  throw new Error(T.nonet);
+}
+
+function bindFile(){
+  $('file').onchange=e=>{
+    const f=e.target.files && e.target.files[0];
+    e.target.value='';
+    if(f) load(f);
+  };
+}
+
+$('pick').onclick=()=>$('file').click();
+bindFile();
+
+function readBytes(f){
+  return new Promise((res,rej)=>{
+    if(f.arrayBuffer){
+      f.arrayBuffer().then(res).catch(()=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result);
+        r.onerror=()=>rej(new Error('read'));
+        r.readAsArrayBuffer(f);
+      });
+      return;
+    }
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=()=>rej(new Error('read'));
+    r.readAsArrayBuffer(f);
+  });
+}
+
+function decodeViaImg(blob){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(blob);
+    const i=new Image();
+
+    const t=setTimeout(()=>{
+      i.onload=i.onerror=null;
+      URL.revokeObjectURL(u);
+      rej(new Error('timeout'));
+    },15000);
+
+    const fin=ok=>{
+      clearTimeout(t);
+      i.onload=i.onerror=null;
+      if(ok){
+        if(!i.naturalWidth){ URL.revokeObjectURL(u); rej(new Error('empty')); return }
+        res(i);
+      }else{
+        URL.revokeObjectURL(u);
+        rej(new Error('img'));
+      }
+    };
+
+    i.onload=()=>{
+      if(i.decode){
+        i.decode().then(()=>fin(true)).catch(()=>fin(true));
+      }else fin(true);
+    };
+    i.onerror=()=>fin(false);
+
+    try{ i.src=u }
+    catch(e){ clearTimeout(t); URL.revokeObjectURL(u); rej(new Error('src')) }
+  });
+}
+
+function decodeViaDataUrl(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      const i=new Image();
+      const t=setTimeout(()=>{ i.onload=i.onerror=null; rej(new Error('timeout')) },15000);
+      i.onload=()=>{ clearTimeout(t); i.naturalWidth?res(i):rej(new Error('empty')) };
+      i.onerror=()=>{ clearTimeout(t); rej(new Error('dataurl')) };
+      i.src=r.result;
+    };
+    r.onerror=()=>rej(new Error('read'));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function decode(f){
+  const buf=await readBytes(f);
+  if(!buf||!buf.byteLength) throw new Error('empty file');
+
+  const type=f.type&&f.type.startsWith('image/')?f.type:'image/png';
+  const blob=new Blob([buf],{type:type});
+
+  const tries=[
+    ()=>createImageBitmap(blob),
+    ()=>decodeViaImg(blob),
+    ()=>decodeViaDataUrl(blob)
+  ];
+
+  let last=null;
+  for(let pass=0;pass<2;pass++){
+    for(let i=0;i<tries.length;i++){
+      if(i===0 && typeof createImageBitmap!=='function') continue;
+      try{
+        const r=await tries[i]();
+        if(r && (r.width||r.naturalWidth)) return r;
+      }catch(e){ last=e }
+      await sleep(60);
+    }
+  }
+  throw last||new Error('decode');
+}
+
+async function load(f){
+  if(busy) return;
+
+  say(T.opening);
+  rain(true,T.opening);
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+  let bmp=null;
+  let err=null;
+
+  for(let attempt=0;attempt<2 && !bmp;attempt++){
+    try{
+      bmp=await decode(f);
+    }catch(e){
+      err=e;
+      await sleep(140);
+    }
+  }
+
+  if(!bmp || !(bmp.width||bmp.naturalWidth)){
+    rain(false);
+    say(T.badopen,true);
+    return;
+  }
+
+  img=bmp;
+  imgW = bmp.naturalWidth || bmp.width || 0;
+  imgH = bmp.naturalHeight || bmp.height || 0;
+
+  if(!imgW || !imgH){
+    img=null;
+    rain(false);
+    say(T.badopen,true);
+    return;
+  }
+
+  const n=f.name||'image';
+  fileName = n.length>24?n.slice(0,22)+'…':n;
+  $('t-pick').textContent=fileName;
+  textures=[];
+  $('result').classList.remove('on');
+
+  clampSlider();
+  rebuild();
+  refreshStatus();
+  rain(false);
+}
+
+const MAXPIECES=60;
+
+function countUniq(c){
+  if(!img) return 0;
+  const r=Math.max(1,Math.round(c*imgH/imgW));
+  const W=c*8, H=r*8;
+
+  const cv=document.createElement('canvas');
+  cv.width=W; cv.height=H;
+  let cx;
+  try{ cx=cv.getContext('2d',{willReadFrequently:true}) }
+  catch(e){ cx=cv.getContext('2d') }
+  cx.imageSmoothingEnabled=false;
+  cx.drawImage(img,0,0,W,H);
+
+  const d=cx.getImageData(0,0,W,H).data;
+  const set=new Set();
+  for(let y=0;y<r;y++){
+    for(let x=0;x<c;x++){
+      let h=2166136261>>>0;
+      for(let py=0;py<8;py++){
+        const o=((y*8+py)*W + x*8)*4;
+        for(let k=0;k<32;k++){
+          h^=d[o+k];
+          h=Math.imul(h,16777619)>>>0;
+        }
+      }
+      set.add(h);
+    }
+  }
+  return set.size;
+}
+
+function clampSlider(){
+  const sl=$('size');
+  if(!img){ sl.max=40; return 40 }
+
+  let lo=4, hi=40, best=4;
+  while(lo<=hi){
+    const mid=(lo+hi)>>1;
+    if(countUniq(mid)<=MAXPIECES){ best=mid; lo=mid+1 }
+    else hi=mid-1;
+  }
+
+  sl.max=best;
+  if(parseInt(sl.value,10)>best) sl.value=best;
+  return best;
+}
+
+function rebuild(){
+  if(!img){ stats(); return }
+
+  cols=parseInt($('size').value,10);
+  rows=Math.max(1,Math.round(cols*imgH/imgW));
+
+  const W=cols*8, H=rows*8;
+  baseCanvas=document.createElement('canvas');
+  baseCanvas.width=W; baseCanvas.height=H;
+
+  let bx;
+  try{ bx=baseCanvas.getContext('2d',{willReadFrequently:true}) }
+  catch(e){ bx=baseCanvas.getContext('2d') }
+  if(!bx) bx=baseCanvas.getContext('2d');
+
+  bx.imageSmoothingEnabled=false;
+  bx.drawImage(img,0,0,W,H);
+
+  const all=bx.getImageData(0,0,W,H).data;
+  hashes=new Array(cols*rows);
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<cols;x++){
+      let h=2166136261>>>0;
+      for(let py=0;py<8;py++){
+        const o=((y*8+py)*W + x*8)*4;
+        for(let k=0;k<32;k++){
+          h^=all[o+k];
+          h=Math.imul(h,16777619)>>>0;
+        }
+      }
+      hashes[y*cols+x]=h.toString(16);
+    }
+  }
+  render(); stats(); build();
+}
+
+function makeSkin(x,y){
+  const sk=document.createElement('canvas');
+  sk.width=64; sk.height=64;
+  const sc=sk.getContext('2d');
+  sc.imageSmoothingEnabled=false;
+  sc.drawImage(baseCanvas, x*8, y*8, 8, 8, 8, 8, 8, 8);
+  return sk.toDataURL('image/png');
+}
+
+const SLOT=0;
+let made=false, itemImg=null;
+
+function render(){
+  if(!made){
+    for(let i=0;i<27;i++){
+      const d=document.createElement('div');
+      d.className='cell';
+      $('main').appendChild(d);
+    }
+    for(let i=0;i<9;i++){
+      const d=document.createElement('div');
+      d.className='cell';
+      $('hot').appendChild(d);
+    }
+    itemImg=document.createElement('img');
+    $('hot').children[SLOT].appendChild(itemImg);
+    $('hot').children[SLOT].classList.add('sel');
+    loadItemTexture(itemImg,$('item').value);
+    made=true;
+  }
+
+  const tip=$('tip');
+  tip.innerHTML='';
+
+  const nm=$('name').value;
+  if(nm){
+    const l=document.createElement('div');
+    l.className='ln';
+    l.innerHTML=ampToHtml(nm,false);
+    tip.appendChild(l);
+    const g=document.createElement('div');
+    g.className='gp';
+    tip.appendChild(g);
+  }
+
+  if(baseCanvas && rows>0){
+    const art=document.createElement('canvas');
+    art.width=cols*8; art.height=rows*8;
+    art.className='ar';
+    const ac=art.getContext('2d');
+    ac.imageSmoothingEnabled=false;
+    ac.drawImage(baseCanvas,0,0);
+    tip.appendChild(art);
+  }
+
+  $('desc').value.split('\n').filter(s=>s.trim()!=='').forEach(s=>{
+    const l=document.createElement('div');
+    l.className='ln';
+    l.innerHTML=ampToHtml(s,true);
+    tip.appendChild(l);
+  });
+
+  const iv=$('inv').getBoundingClientRect();
+  const sl=$('hot').children[SLOT].getBoundingClientRect();
+  const cx=sl.left-iv.left+20;
+  const cy=sl.top-iv.top+18;
+
+  $('cur').style.left=cx+'px';
+  $('cur').style.top=cy+'px';
+  tip.style.left=(cx+10)+'px';
+  tip.style.top='auto';
+  tip.style.bottom=(iv.height-cy+6)+'px';
+}
+
+function snbt(v){
+  if(Array.isArray(v))return '['+v.map(snbt).join(',')+']';
+  if(v&&typeof v==='object')return '{'+Object.entries(v).map(([k,x])=>k+':'+snbt(x)).join(',')+'}';
+  if(typeof v==='string')return '"'+v.replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"';
+  return String(v);
+}
+
+function build(){
+  if(!hashes.length) return;
+  const ready = textures.length===hashes.length;
+
+  const lore=[];
+  for(let y=0;y<rows;y++){
+    const line=[];
+    for(let x=0;x<cols;x++){
+      const c={color:'white'};
+      if(y!==rows-1) c.shadow_color=-1;
+      c.player={properties:[{name:'textures',
+        value: ready?textures[y*cols+x]:'<TEX'+(y*cols+x)+'>'}]};
+      line.push(c);
+    }
+    lore.push(line);
+  }
+
+  $('desc').value.split('\n').filter(s=>s.trim()!=='').forEach(s=>{
+    lore.push(parseAmp(s,true));
+  });
+
+  const parts=[];
+  const nm=$('name').value;
+  if(nm) parts.push('custom_name='+snbt(parseAmp(nm,false)));
+  parts.push('lore='+snbt(lore));
+
+  const item=$('item').value.trim().replace(/^minecraft:/,'')||'paper';
+  cmd='/give @p minecraft:'+item+'['+parts.join(',')+'] 1';
+
+  if(ready){
+    $('out').textContent=cmd;
+    $('result').classList.add('on');
+  }else{
+    $('result').classList.remove('on');
+  }
+}
+
+$('cmdbox').onclick=()=>{
+  if(!cmd) return;
+  navigator.clipboard.writeText(cmd).then(()=>{
+    $('tap').textContent=T.copied;
+    setTimeout(()=>{ $('tap').textContent=T.tap },1400);
+  });
+};
+
+function refreshStatus(){
+  if(busy) return;
+  if(!img){ say(T.needimg); return }
+  if(!$('key').value.trim()){ say(T.needkey); return }
+  say(T.ready);
+}
+
+function stats(){
+  if(!img){
+    $('num').textContent=T.noimg;
+    $('info').textContent='';
+  }else{
+    $('num').innerHTML=T.w+(cols*8)+T.px+'<br>'+T.h+(rows*8)+T.px;
+
+    const uniqList=Array.from(new Set(hashes));
+    const uniq=uniqList.length;
+    const have=uniqList.filter(h=>texStore[h]).length;
+    const left=uniq-have;
+
+    const sec=left*3.2;
+    const tm = sec<60 ? Math.round(sec)+T.sec : Math.round(sec/60)+T.min;
+
+    let txt=T.pieces+uniq+T.pcs;
+    if(have>0) txt+=' - '+have+' \u2713';
+    txt+='<br>'+T.time+tm;
+
+    const sl=$('size');
+    if(parseInt(sl.value,10)>=parseInt(sl.max,10) && parseInt(sl.max,10)<40){
+      txt+='<br>'+T.capped;
+    }
+    $('info').innerHTML=txt;
+  }
+  $('go').disabled = (!busy) && (!img || !$('key').value.trim());
+}
+
+function say(t,err){
+  const s=$('status');
+  s.textContent=t;
+  s.className='status'+(err?' err':'');
+  if(busy) $('rtext').textContent=t;
+}
+
+
+$('go').onclick=async()=>{
+  if(busy){ stopped=true; say(T.stopping); return }
+  if(!img) return;
+  const key=$('key').value.trim();
+  if(!key){ say(T.needkey,true); return }
+
+  busy=true; textures=[]; good=null; stopped=false;
+  $('prog').classList.add('on');
+  $('t-go').textContent=T.stop;
+  stats();
+  rain(true);
+
+  const uniq=new Set(hashes).size;
+  let done=0;
+
+  const uniqList=Array.from(new Set(hashes));
+  uniqList.forEach(h=>{ if(texStore[h]) done++ });
+
+  try{
+    for(const h of uniqList){
+      if(texStore[h]) continue;
+      if(stopped) throw new Error(T.stopped);
+
+      const idx=hashes.indexOf(h);
+      const skin=makeSkin(idx%cols,(idx/cols)|0);
+
+      let ok=false;
+      while(!ok){
+        try{
+          texStore[h]=await upload(skin,'LoreArt'+h,key);
+          saveTexStore();
+          ok=true;
+        }catch(e){
+          if(!e.rate) throw e;
+
+          let wait=0;
+          if(e.reset){
+            const now=Math.floor(Date.now()/1000);
+            wait = e.reset>now ? (e.reset-now) : 0;
+          }
+          if(!wait || wait>3900) wait=3660;
+
+          for(let s=wait;s>0;s--){
+            if(stopped) throw new Error(T.stopped);
+            const m=Math.floor(s/60), ss=s%60;
+            say(T.waiting+m+':'+String(ss).padStart(2,'0')+'  ('+done+'/'+uniq+')');
+            await sleep(1000);
+          }
+        }
+      }
+
+      done++;
+      $('fill').style.width=(done/uniq*100)+'%';
+      $('pnow').textContent=done+' / '+uniq;
+      say(T.loading+done+T.of+uniq);
+
+      if(done<uniq) await sleep(3200);
+    }
+
+    textures=hashes.map(h=>texStore[h]);
+    $('fill').style.width='100%';
+    build();
+    busy=false;
+    say(T.done);
+
+  }catch(e){
+    busy=false;
+    say(e.message,true);
+    textures=[];
+    build();
+  }finally{
+    busy=false;
+    rain(false);
+    $('t-go').textContent=T.go;
+    stats();
+  }
+};
+
+$('bin').onclick=()=>{
+  const t=$('trash');
+  t.classList.remove('spill');
+  void t.offsetWidth;
+  t.classList.add('spill');
+
+  img=null;
+  imgW=0; imgH=0;
+  baseCanvas=null;
+  hashes=[];
+  textures=[];
+  cmd='';
+  cols=0; rows=0;
+  good=null;
+  fileName='';
+  texStore={};
+  saveTexStore();
+
+  const old=$('file');
+  const fresh=document.createElement('input');
+  fresh.type='file';
+  fresh.id='file';
+  fresh.accept='image/*';
+  fresh.hidden=true;
+  old.parentNode.replaceChild(fresh,old);
+  bindFile();
+
+  $('name').value='';
+  $('desc').value='';
+  $('item').value='paper';
+  $('size').max=40;
+  $('size').value=16;
+  $('t-pick').textContent=T.pick;
+  $('result').classList.remove('on');
+  $('prog').classList.remove('on');
+  $('fill').style.width='0';
+  $('tip').style.visibility='visible';
+
+  if(itemImg) loadItemTexture(itemImg,'paper');
+  render();
+  stats();
+  say(T.cleared);
+  store();
+
+  setTimeout(()=>refreshStatus(),1200);
+};
+
+let sizeTimer=null;
+
+function quickNum(){
+  const c=parseInt($('size').value,10);
+  if(!img){ $('num').textContent=T.noimg; return }
+  const r=Math.max(1,Math.round(c*imgH/imgW));
+  $('num').innerHTML=T.w+(c*8)+T.px+'<br>'+T.h+(r*8)+T.px;
+}
+
+$('size').addEventListener('input',()=>{
+  textures=[];
+  $('result').classList.remove('on');
+  $('tip').style.visibility='hidden';
+  quickNum();
+  clearTimeout(sizeTimer);
+  sizeTimer=setTimeout(()=>{
+    $('tip').style.visibility='visible';
+    if(img) rebuild(); else stats();
+    store();
+  },140);
+});
+
+['name','desc'].forEach(id=>{
+  $(id).addEventListener('input',()=>{
+    if(img){ render(); build() }
+    store();
+  });
+});
+
+let itemTimer=null;
+$('item').addEventListener('input',()=>{
+  clearTimeout(itemTimer);
+  itemTimer=setTimeout(()=>{
+    if(itemImg) loadItemTexture(itemImg,$('item').value);
+  },250);
+  if(img) build();
+  store();
+});
+
+$('key').addEventListener('input',()=>{
+  stats();
+  refreshStatus();
+  store();
+});
+
+restore();
+applyLang();
+render();
+stats();
+refreshStatus();
+</script>
+
+</body>
+</html>
