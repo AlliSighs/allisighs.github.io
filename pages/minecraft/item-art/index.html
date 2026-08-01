@@ -1,21 +1,36 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="scroll-smooth">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>lore art</title>
+    <!-- FAVICONS & SEO -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="/siteicon.png">
+    <link rel="apple-touch-icon" href="/siteicon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#000000">
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>allisighs tools // lore art</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="../../../css/style.css">
+    <script src="../../../js/main.js"></script>
+
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
 
-  body{
+  .item-art-wrapper {
     background:#0f37f5;
     color:#fff;
     font-family:Arial, Helvetica, sans-serif;
     font-size:17px;
-    min-height:100vh;
-    padding:28px 24px 90px;
+    flex: 1;
+    padding: 100px 24px 90px;
     display:flex;
     justify-content:center;
+    position: relative;
+    z-index: 10;
   }
 
   .col{
@@ -514,7 +529,7 @@ stroke-width='1.6' stroke-linecap='round'/></svg>");
   #rain{
     position:fixed;
     inset:0;
-    z-index:900;
+    z-index:30;
     display:none;
     pointer-events:none;
     overflow:hidden;
@@ -546,7 +561,7 @@ stroke-width='1.6' stroke-linecap='round'/></svg>");
     position:fixed;
     left:0;right:0;
     top:50%;
-    z-index:920;
+    z-index:35;
     transform:translateY(-50%);
     text-align:center;
     font-size:18px;
@@ -554,7 +569,7 @@ stroke-width='1.6' stroke-linecap='round'/></svg>");
     pointer-events:none;
   }
 
-  a{color:#fff}
+  .item-art-wrapper a{color:#fff}
   .quiet{opacity:.65;font-size:14px;text-align:center;line-height:1.7}
   .tiny{opacity:.6;font-size:13px;text-align:center;margin-top:-38px;line-height:1.5}
 
@@ -563,138 +578,170 @@ stroke-width='1.6' stroke-linecap='round'/></svg>");
   ::-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
-<body>
+<body class="lowercase min-h-screen relative overflow-x-hidden selection:bg-lime selection:text-black font-sans antialiased bg-black flex flex-col">
 
-<div id="rain">
-  <div class="rtext" id="rtext"></div>
+<!-- LOADER -->
+<div id="system-loader">
+    <div class="w-32 h-1 bg-gray-800 rounded overflow-hidden">
+        <div class="h-full bg-lime w-1/2 animate-[blob_2s_infinite]"></div>
+    </div>
 </div>
 
-<div class="col">
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-40 px-6 h-16 flex justify-between items-center border-b border-white/5 bg-black/80 backdrop-blur-md">
+    <div class="flex items-center gap-3">
+        <a href="../../../" class="flex items-center gap-2 hover:text-lime text-gray-400 transition-colors">
+            <span class="material-symbols-rounded text-[24px]">arrow_back</span>
+            <span class="font-mono font-bold tracking-tight">назад</span>
+        </a>
+    </div>
+    <div class="font-mono text-gray-500 text-xs lowercase hidden md:block">minecraft / lore art</div>
+    <div class="flex items-center gap-3">
+        <span id="user-greeting" class="font-mono text-sm text-lime">...</span>
+        <button onclick="logout()" class="text-gray-600 hover:text-white transition-colors"><span class="material-symbols-rounded text-[20px]">logout</span></button>
+    </div>
+</header>
 
-  <div class="flags">
-    <button class="flag" id="fl-uk" title="Українська">
-      <svg viewBox="0 0 60 40"><rect width="60" height="20" fill="#0057b7"/><rect y="20" width="60" height="20" fill="#ffd700"/></svg>
-    </button>
-    <button class="flag" id="fl-en" title="English">
-      <svg viewBox="0 0 60 40">
-        <rect width="60" height="40" fill="#fff"/>
-        <g fill="#b22234"><rect y="0" width="60" height="3"/><rect y="6" width="60" height="3"/><rect y="12" width="60" height="3"/><rect y="18" width="60" height="3"/><rect y="24" width="60" height="3"/><rect y="30" width="60" height="3"/><rect y="36" width="60" height="3"/></g>
-        <rect width="26" height="21" fill="#3c3b6e"/>
-      </svg>
-    </button>
-    <button class="flag" id="fl-ru" title="Русский">
-      <svg viewBox="0 0 60 40"><rect width="60" height="13.3" fill="#fff"/><rect y="13.3" width="60" height="13.3" fill="#0039a6"/><rect y="26.6" width="60" height="13.4" fill="#d52b1e"/></svg>
-    </button>
-  </div>
+<!-- TOOL CONTENT WRAPPER -->
+<div class="item-art-wrapper">
+    <div id="rain">
+      <div class="rtext" id="rtext"></div>
+    </div>
 
-  <input type="file" id="file" accept="image/*" hidden>
-  <button class="drop s1" id="pick">
-    <span class="glare"></span><span class="glare sm"></span>
-    <span class="in" id="t-pick">Выбрать картинку</span>
-  </button>
-
-  <div class="slide">
-    <input type="range" id="size" min="4" max="40" value="16">
-    <div class="lbl" id="t-size">Размер картинки в игре</div>
-    <div class="num" id="num"></div>
-  </div>
-
-  <label class="drop inp s2">
-    <span class="glare"></span><span class="glare sm"></span>
-    <input type="text" class="in" id="name" maxlength="120">
-  </label>
-
-  <label class="drop inp s3">
-    <span class="glare"></span><span class="glare sm"></span>
-    <textarea class="in" id="desc"></textarea>
-  </label>
-  <div class="tiny" id="t-codes"></div>
-
-  <div class="lbl" id="t-item">ID предмета</div>
-  <label class="drop inp s4">
-    <span class="glare"></span><span class="glare sm"></span>
-    <input type="text" class="in" id="item" value="paper" spellcheck="false" placeholder="paper">
-  </label>
-
-  <label class="drop inp s5">
-    <span class="glare"></span><span class="glare sm"></span>
-    <input type="password" class="in" id="key" autocomplete="off">
-  </label>
-
-  <div class="prev">
-    <div class="inv" id="inv">
-      <div class="invt" id="t-inv">Инвентарь</div>
-      <div class="grid" id="main"></div>
-      <div class="grid hot" id="hot"></div>
-      <div class="tip" id="tip"></div>
-      <div class="cur" id="cur">
-        <svg width="14" height="21" viewBox="0 0 8 12">
-          <path d="M0.4 0.4 L0.4 9.6 L2.4 7.9 L3.9 11.4 L5.4 10.7 L4 7.3 L6.6 7.3 Z"
-                fill="#fff" stroke="#000" stroke-width=".8" stroke-linejoin="round"/>
-        </svg>
+    <div class="col">
+      <div class="flags">
+        <button class="flag" id="fl-uk" title="Українська">
+          <svg viewBox="0 0 60 40"><rect width="60" height="20" fill="#0057b7"/><rect y="20" width="60" height="20" fill="#ffd700"/></svg>
+        </button>
+        <button class="flag" id="fl-en" title="English">
+          <svg viewBox="0 0 60 40">
+            <rect width="60" height="40" fill="#fff"/>
+            <g fill="#b22234"><rect y="0" width="60" height="3"/><rect y="6" width="60" height="3"/><rect y="12" width="60" height="3"/><rect y="18" width="60" height="3"/><rect y="24" width="60" height="3"/><rect y="30" width="60" height="3"/><rect y="36" width="60" height="3"/></g>
+            <rect width="26" height="21" fill="#3c3b6e"/>
+          </svg>
+        </button>
+        <button class="flag" id="fl-ru" title="Русский">
+          <svg viewBox="0 0 60 40"><rect width="60" height="13.3" fill="#fff"/><rect y="13.3" width="60" height="13.3" fill="#0039a6"/><rect y="26.6" width="60" height="13.4" fill="#d52b1e"/></svg>
+        </button>
       </div>
-    </div>
-    <div class="info" id="info"></div>
-  </div>
 
-  <div class="chain">
-    <button class="drop s6" id="go" disabled>
-      <span class="glare"></span><span class="glare sm"></span>
-      <span class="in" id="t-go">Создать</span>
-    </button>
-    <div class="link"><i></i><i></i><i></i></div>
-    <div class="status" id="status"></div>
-    <div class="warn" id="t-limit"></div>
-  </div>
-
-  <div class="prog" id="prog">
-    <div class="pb"><i id="fill"></i></div>
-    <div class="num" id="pnow">0 / 0</div>
-  </div>
-
-  <div class="result" id="result">
-    <button class="cmd" id="cmdbox">
-      <span class="glare"></span><span class="glare sm"></span>
-      <span class="txt" id="out"></span>
-      <span class="tap" id="tap"></span>
-    </button>
-  </div>
-
-  <div class="trash" id="trash">
-    <div class="binwrap">
-      <svg class="ring" viewBox="0 0 140 140" xmlns:xlink="http://www.w3.org/1999/xlink">
-        <defs>
-          <path id="ringpath" fill="none"
-                d="M70,14
-                   C102,14 127,39 127,70
-                   C127,102 102,126 70,126
-                   C38,126 13,102 13,70
-                   C13,38 38,14 70,14 Z"/>
-        </defs>
-        <text>
-          <textPath href="#ringpath" xlink:href="#ringpath"
-                    startOffset="50%" text-anchor="middle"
-                    textLength="328" lengthAdjust="spacing"
-                    id="ringtext"></textPath>
-        </text>
-      </svg>
-
-      <div class="bindrop"></div>
-
-      <button class="bin" id="bin">
-        <svg viewBox="0 0 40 42">
-          <rect x="6" y="12" width="28" height="28" rx="3" fill="none" stroke="#fff" stroke-width="2.5" opacity=".85"/>
-          <path d="M3 9 h34" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>
-          <path d="M15 9 v-4 h10 v4" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity=".85"/>
-          <path d="M15 19 v14 M20 19 v14 M25 19 v14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>
-        </svg>
+      <input type="file" id="file" accept="image/*" hidden>
+      <button class="drop s1" id="pick">
+        <span class="glare"></span><span class="glare sm"></span>
+        <span class="in" id="t-pick">Выбрать картинку</span>
       </button>
+
+      <div class="slide">
+        <input type="range" id="size" min="4" max="40" value="16">
+        <div class="lbl" id="t-size">Размер картинки в игре</div>
+        <div class="num" id="num"></div>
+      </div>
+
+      <label class="drop inp s2">
+        <span class="glare"></span><span class="glare sm"></span>
+        <input type="text" class="in" id="name" maxlength="120">
+      </label>
+
+      <label class="drop inp s3">
+        <span class="glare"></span><span class="glare sm"></span>
+        <textarea class="in" id="desc"></textarea>
+      </label>
+      <div class="tiny" id="t-codes"></div>
+
+      <div class="lbl" id="t-item">ID предмета</div>
+      <label class="drop inp s4">
+        <span class="glare"></span><span class="glare sm"></span>
+        <input type="text" class="in" id="item" value="paper" spellcheck="false" placeholder="paper">
+      </label>
+
+      <label class="drop inp s5">
+        <span class="glare"></span><span class="glare sm"></span>
+        <input type="password" class="in" id="key" autocomplete="off">
+      </label>
+
+      <div class="prev">
+        <div class="inv" id="inv">
+          <div class="invt" id="t-inv">Инвентарь</div>
+          <div class="grid" id="main"></div>
+          <div class="grid hot" id="hot"></div>
+          <div class="tip" id="tip"></div>
+          <div class="cur" id="cur">
+            <svg width="14" height="21" viewBox="0 0 8 12">
+              <path d="M0.4 0.4 L0.4 9.6 L2.4 7.9 L3.9 11.4 L5.4 10.7 L4 7.3 L6.6 7.3 Z"
+                    fill="#fff" stroke="#000" stroke-width=".8" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="info" id="info"></div>
+      </div>
+
+      <div class="chain">
+        <button class="drop s6" id="go" disabled>
+          <span class="glare"></span><span class="glare sm"></span>
+          <span class="in" id="t-go">Создать</span>
+        </button>
+        <div class="link"><i></i><i></i><i></i></div>
+        <div class="status" id="status"></div>
+        <div class="warn" id="t-limit"></div>
+      </div>
+
+      <div class="prog" id="prog">
+        <div class="pb"><i id="fill"></i></div>
+        <div class="num" id="pnow">0 / 0</div>
+      </div>
+
+      <div class="result" id="result">
+        <button class="cmd" id="cmdbox">
+          <span class="glare"></span><span class="glare sm"></span>
+          <span class="txt" id="out"></span>
+          <span class="tap" id="tap"></span>
+        </button>
+      </div>
+
+      <div class="trash" id="trash">
+        <div class="binwrap">
+          <svg class="ring" viewBox="0 0 140 140" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <defs>
+              <path id="ringpath" fill="none"
+                    d="M70,14
+                       C102,14 127,39 127,70
+                       C127,102 102,126 70,126
+                       C38,126 13,102 13,70
+                       C13,38 38,14 70,14 Z"/>
+            </defs>
+            <text>
+              <textPath href="#ringpath" xlink:href="#ringpath"
+                        startOffset="50%" text-anchor="middle"
+                        textLength="328" lengthAdjust="spacing"
+                        id="ringtext"></textPath>
+            </text>
+          </svg>
+
+          <div class="bindrop"></div>
+
+          <button class="bin" id="bin">
+            <svg viewBox="0 0 40 42">
+              <rect x="6" y="12" width="28" height="28" rx="3" fill="none" stroke="#fff" stroke-width="2.5" opacity=".85"/>
+              <path d="M3 9 h34" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>
+              <path d="M15 9 v-4 h10 v4" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round" opacity=".85"/>
+              <path d="M15 19 v14 M20 19 v14 M25 19 v14" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="quiet" id="t-foot"></div>
+
     </div>
-  </div>
-
-  <div class="quiet" id="t-foot"></div>
-
 </div>
+
+<!-- FOOTER -->
+<footer class="border-t border-white/10 bg-black/80 backdrop-blur-xl shrink-0 z-40 relative">
+    <div class="max-w-[1600px] mx-auto px-6 md:px-12 py-8 text-center">
+        <p class="text-xs text-lime font-mono mb-1">system: operational</p>
+        <p class="text-xs text-gray-600 font-mono">© 2026 allisighs tools</p>
+    </div>
+</footer>
 
 <script>
 'use strict';
@@ -1645,6 +1692,15 @@ applyLang();
 render();
 stats();
 refreshStatus();
+window.addEventListener('load', () => {
+    const loader = document.getElementById('system-loader');
+    if(loader) {
+        setTimeout(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 500);
+        }, 500);
+    }
+});
 </script>
 
 </body>
