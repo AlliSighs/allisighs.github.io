@@ -384,45 +384,79 @@ function logoutDiscord() {
     location.reload();
 }
 
-window.downloadCdnFile = async (url) => {
-    const isDiscord = url.includes('cdn.discordapp.com') || url.includes('media.discordapp.net');
+// Очередь для контроля одновременных загрузок, чтобы не нагружать браузер и не ловить сетевые таймауты
+window._activeDownloads = 0;
+window._downloadQueue = [];
 
-    if (!isDiscord) {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('fetch failed: ' + res.status);
-        return await res.blob();
-    }
-
-    const enc = encodeURIComponent(url);
-
+window._processDownloadQueue = async () => {
+    // 15 одновременных потоков — оптимально. И быстро, и не триггерит защиту
+    if (window._activeDownloads >= 15 || window._downloadQueue.length === 0) return;
     
-    const proxies = [
-        () => fetch(`https://corsproxy.io/?${enc}`,                         { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://api.allorigins.win/raw?url=${enc}`,            { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://corsproxy.io/?url=${enc}`,                     { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`,       { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://thingproxy.freeboard.io/fetch/${url}`,         { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://yacdn.org/proxy/${url}`,                       { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://cors.eu.org/${url}`,                           { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://cors-proxy.fringe.zone/${url}`,                { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://proxy.cors.sh/${url}`,                         { signal: AbortSignal.timeout(8000) }),
-        () => fetch(`https://crossorigin.me/${url}`,                        { signal: AbortSignal.timeout(8000) }),
-    ];
-
+    window._activeDownloads++;
+    const { url, resolve, reject } = window._downloadQueue.shift();
     
-    for (const attempt of proxies) {
-        for (let retry = 0; retry < 2; retry++) {
-            try {
-                const res = await attempt();
-                if (!res.ok) break; 
-                const blob = await res.blob();
-                if (blob.size < 16) break;
-                return blob;
-            } catch (e) {
-                if (retry === 0) await new Promise(r => setTimeout(r, 500));
+    try {
+        let resultBlob = null;
+        
+        // 1. Пытаемся скачать файл напрямую (CDN дискорда поддерживает CORS для эмодзи/ролей)
+        try {
+            const res = await fetch(url);
+            if (res.ok) {
+                resultBlob = await res.blob();
+            }
+        } catch (e) {
+            console.warn('Прямая загрузка не удалась, переход к прокси для:', url);
+        }
+        
+        // 2. Если прямой запрос не сработал (редко, но бывает из-за других доменов), падаем на прокси
+        if (!resultBlob || resultBlob.size < 16) {
+            const enc = encodeURIComponent(url);
+            const proxies = [
+                () => fetch(`https://api.allorigins.win/raw?url=${enc}`,            { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://corsproxy.io/?${enc}`,                         { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`,       { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://thingproxy.freeboard.io/fetch/${url}`,         { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://yacdn.org/proxy/${url}`,                       { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://cors.eu.org/${url}`,                           { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://cors-proxy.fringe.zone/${url}`,                { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://proxy.cors.sh/${url}`,                         { signal: AbortSignal.timeout(8000) }),
+                () => fetch(`https://crossorigin.me/${url}`,                        { signal: AbortSignal.timeout(8000) }),
+            ];
+            
+            for (const attempt of proxies) {
+                for (let retry = 0; retry < 2; retry++) {
+                    try {
+                        const res = await attempt();
+                        if (!res.ok) break; 
+                        const blob = await res.blob();
+                        if (blob.size < 16) break;
+                        resultBlob = blob;
+                        break;
+                    } catch (e) {
+                        if (retry === 0) await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+                if (resultBlob) break;
             }
         }
+        
+        if (resultBlob) {
+            resolve(resultBlob);
+        } else {
+            reject(new Error('Все способы скачивания недоступны: ' + url));
+        }
+    } catch (e) {
+        reject(e);
+    } finally {
+        window._activeDownloads--;
+        // Запускаем следующий таск в очереди
+        window._processDownloadQueue();
     }
+};
 
-    throw new Error('все прокси недоступны: ' + url);
+window.downloadCdnFile = (url) => {
+    return new Promise((resolve, reject) => {
+        window._downloadQueue.push({ url, resolve, reject });
+        window._processDownloadQueue();
+    });
 };
