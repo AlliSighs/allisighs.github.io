@@ -184,6 +184,43 @@
     </div>
 
     <script>
+        /* ===== ФИКС КРАКОЗЯБР (UTF-8, прочитанный как windows-1251: "РїРѕРєР°" -> "пока") ===== */
+        const TextFix = (() => {
+            const cp = new TextDecoder('windows-1251');
+            const map = new Map();
+            for (let b = 0; b < 256; b++) {
+                const ch = cp.decode(new Uint8Array([b]));
+                if (!map.has(ch)) map.set(ch, b);
+            }
+            const utf = new TextDecoder('utf-8', { fatal: true });
+            // типичная кракозябра: Р/С/В + символ, который в cp1251 соответствует байту 0x80–0xBF
+            const hint = /[РСВ][\u0080-\u00BF\u0400-\u045F\u0490\u0491\u2013-\u2122]/;
+
+            function fixLine(s) {
+                if (!s || !hint.test(s)) return s;
+                const bytes = new Uint8Array(s.length);
+                for (let i = 0; i < s.length; i++) {
+                    const b = map.get(s[i]);
+                    if (b === undefined) return s;
+                    bytes[i] = b;
+                }
+                try { return utf.decode(bytes); } catch (e) { return s; }
+            }
+
+            // декодирует байты и чинит двойную кодировку построчно
+            function decode(u8) {
+                let isUtf = true;
+                for (let i = 0; i < Math.min(u8.length, 4096); i++) {
+                    if (u8[i] > 127 && (u8[i] < 192 || (u8[i+1] && (u8[i+1] & 0xC0) !== 0x80))) { isUtf = false; break; }
+                }
+                const lines = new TextDecoder(isUtf ? 'utf-8' : 'windows-1251').decode(u8).split(/\r?\n/);
+                for (let i = 0; i < lines.length; i++) lines[i] = fixLine(lines[i]);
+                return lines;
+            }
+
+            return { decode, fixLine };
+        })();
+
         class VirtualViewer {
             constructor(containerId) {
                 this.container = document.getElementById(containerId);
@@ -304,11 +341,7 @@
             },
 
             decode(u8) {
-                let isUtf = true;
-                for(let i=0; i<Math.min(u8.length, 4096); i++) {
-                    if(u8[i] > 127 && (u8[i] < 192 || (u8[i+1] && (u8[i+1] & 0xC0) !== 0x80))) { isUtf = false; break; }
-                }
-                return new TextDecoder(isUtf ? 'utf-8' : 'windows-1251').decode(u8).split(/\r?\n/);
+                return TextFix.decode(u8);
             },
 
             addFile(name, lines) {
@@ -354,7 +387,6 @@
                 this.activeFile = name;
                 document.getElementById('current-file-name').innerText = name;
                 this.renderFileList();
-                // Re-check active item's checkbox if it was selected globally? No, keep independent.
                 this.viewer.load(this.files[name]);
                 document.getElementById('output-log').value = ''; 
                 this.switchTab('filter');
@@ -375,7 +407,6 @@
                 const keys = cbs.map(cb => cb.dataset.name);
                 
                 if (keys.length === 0) {
-                    // Если ничего не выбрано, спросим "Удалить всё?"
                     if(Object.keys(this.files).length > 0 && confirm('Удалить ВСЕ файлы?')) {
                         this.clearAll();
                     }
@@ -384,7 +415,6 @@
 
                 keys.forEach(k => delete this.files[k]);
                 
-                // Если активный файл удален
                 if (keys.includes(this.activeFile)) {
                     this.activeFile = null;
                     this.viewer.load([]);
@@ -392,7 +422,6 @@
                 }
                 
                 this.renderFileList();
-                // Reset select all state
                 this.allSelected = false;
                 document.getElementById('select-all-icon').innerText = 'done_all';
             },
@@ -627,11 +656,7 @@
             },
 
             decode(u8) {
-                let isUtf = true;
-                for(let i=0; i<Math.min(u8.length, 4096); i++) {
-                    if(u8[i] > 127 && (u8[i] < 192 || (u8[i+1] && (u8[i+1] & 0xC0) !== 0x80))) { isUtf = false; break; }
-                }
-                return new TextDecoder(isUtf ? 'utf-8' : 'windows-1251').decode(u8).split(/\r?\n/);
+                return TextFix.decode(u8);
             },
 
             addFile(name, lines) {
@@ -640,7 +665,6 @@
             },
 
             async process() {
-                // Determine which files to process: checked ones, or active file
                 const checkedCbs = Array.from(document.querySelectorAll('.slon-file-cb:checked'));
                 const fileNames = checkedCbs.length > 0
                     ? checkedCbs.map(cb => cb.dataset.name).filter(n => this.files[n])
@@ -671,7 +695,6 @@
 
                     const chatTexts = new Array(lines.length).fill(null);
                     const slonyaraIndices = [];
-                    // validArr: ordered list of raw indices of public messages only
                     const validArr = [];
 
                     for(let i=0; i<lines.length; i+=batch) {
@@ -684,7 +707,6 @@
                             if(low.includes(keyword)) {
                                 slonyaraIndices.push(j);
                             } else if(ct.startsWith('[')) {
-                                // public chat only — pati/system skipped
                                 validArr.push(j);
                             }
                         }
@@ -695,17 +717,13 @@
 
                     totalSlonyara += slonyaraIndices.length;
 
-                    // validArr is already built in order during scan
-                    // For each slonyara, binary search its position in validArr, take 8 before
                     if(fileNames.length > 1 && slonyaraIndices.length > 0) {
                         result.push('═══════════ ' + fname + ' ═══════════');
                     }
 
                     for(const sIdx of slonyaraIndices) {
-                        // binary search: find how many public messages came before sIdx
                         let lo = 0, hi = validArr.length;
                         while(lo < hi) { const mid = (lo+hi)>>1; if(validArr[mid] < sIdx) lo=mid+1; else hi=mid; }
-                        // lo = count of public messages before this mute
                         const start = Math.max(0, lo - BEFORE);
                         const block = [];
                         for(let k = start; k < lo; k++) {
@@ -716,7 +734,6 @@
                         result.push('─────────────────────────────────────');
                         totalShown += block.length;
                     }
-                    // remove last separator
                     if(result.length && result[result.length-1] === '─────────────────────────────────────') result.pop();
                 }
 
@@ -745,7 +762,6 @@
 
     <!-- ===== SLONYARA OVERLAY ===== -->
     <div id="slonyara-overlay" style="display:none; position:fixed; inset:0; z-index:200; background:#000; flex-direction:column;">
-        <!-- Header -->
         <div style="height:56px; background:#0a0a0a; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; padding:0 20px; gap:16px; flex-shrink:0;">
             <button onclick="SlonyaraTab.close()" style="background:none; border:none; color:#666; cursor:pointer; display:flex; align-items:center; gap:6px; font-family:monospace; font-size:12px;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">
                 <span class="material-symbols-rounded" style="font-size:20px;">arrow_back</span> назад
@@ -755,7 +771,6 @@
             <span id="slon-stats" style="font-family:monospace; font-size:10px; color:#555; margin-left:auto;"></span>
         </div>
 
-        <!-- Loading -->
         <div id="slon-proc" style="display:none; position:absolute; inset:0; z-index:10; background:rgba(0,0,0,0.85); flex-direction:column; align-items:center; justify-content:center; gap:12px;">
             <span class="material-symbols-rounded" style="font-size:36px; color:#ccff00; animation:spin 1s linear infinite;">settings</span>
             <div id="slon-proc-text" style="font-family:monospace; font-size:12px; color:#fff;">...</div>
@@ -765,17 +780,15 @@
         </div>
 
         <div style="flex:1; display:flex; overflow:hidden;">
-            <!-- Sidebar -->
             <div style="width:280px; background:#050505; border-right:1px solid rgba(255,255,255,0.07); display:flex; flex-direction:column; flex-shrink:0;">
                 <div style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.03); display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <div style="font-family:monospace; font-size:13px; font-weight:bold; color:#fff;">файлы</div>
                         <div style="font-family:monospace; font-size:10px; color:#555;">всего: <span id="slon-file-count" style="color:#ccff00;">0</span></div>
-                        <button onclick="SlonyaraTab.toggleSelectAll()" title="выбрать все" style="background:none; border:none; color:#555; cursor:pointer; padding:4px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.color='#555'; this.style.background='none'"><span class="material-symbols-rounded" id="slon-select-all-icon" style="font-size:20px; display:block;">done_all</span></button>
-                </div>
+                    </div>
+                    <button onclick="SlonyaraTab.toggleSelectAll()" title="выбрать все" style="background:none; border:none; color:#555; cursor:pointer; padding:4px; border-radius:6px; transition:0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.color='#555'; this.style.background='none'"><span class="material-symbols-rounded" id="slon-select-all-icon" style="font-size:20px; display:block;">done_all</span></button>
                 </div>
 
-                <!-- Drop zone -->
                 <div id="slon-drop-zone" style="margin:12px; border:2px dashed rgba(255,255,255,0.15); border-radius:10px; padding:16px; text-align:center; cursor:pointer; transition:0.2s;" onmouseover="this.style.borderColor='#ccff00'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'">
                     <input type="file" id="slon-file-input" multiple accept=".log,.txt,.zip,.gz,.tar" style="display:none;">
                     <span class="material-symbols-rounded" style="font-size:28px; color:#444;">upload_file</span>
@@ -787,9 +800,7 @@
                 </div>
             </div>
 
-            <!-- Main -->
             <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-                <!-- Controls -->
                 <div style="padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.5); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                     <button onclick="SlonyaraTab.process()" style="background:rgba(204,255,0,0.15); border:1px solid rgba(204,255,0,0.4); color:#ccff00; padding:8px 20px; border-radius:8px; font-family:monospace; font-size:11px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='rgba(204,255,0,0.3)'" onmouseout="this.style.background='rgba(204,255,0,0.15)'">
                         🐘 НАЙТИ СЛОНЯРУ
@@ -801,7 +812,6 @@
                     </div>
                 </div>
 
-                <!-- Output -->
                 <div style="flex:1; display:flex; overflow:hidden; background:#050505;">
                     <textarea id="slon-output" readonly style="flex:1; background:transparent; padding:12px; font-family:'JetBrains Mono',monospace; font-size:12px; color:rgba(204,255,0,0.8); resize:none; outline:none; overflow:auto; white-space:pre;" placeholder="нажми «найти слоняру»..."></textarea>
                 </div>
@@ -814,7 +824,6 @@
     </style>
 
     <script>
-        // Init slonyara file upload
         window.addEventListener('load', () => {
             const dz = document.getElementById('slon-drop-zone');
             const inp = document.getElementById('slon-file-input');
