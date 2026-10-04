@@ -10,7 +10,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>allisighs tools // history maker</title>
+    <title>allisighs tools 
     <!-- ФАВИКОНКА -->
     <link rel="icon" type="image/png" href="../../../assets/siteicon.png">
     
@@ -200,7 +200,7 @@
                 if (!map.has(ch)) map.set(ch, b);
             }
             const utf = new TextDecoder('utf-8', { fatal: true });
-            // типичная кракозябра: Р/С/В + символ, который в cp1251 соответствует байту 0x80–0xBF
+            
             const hint = /[РСВ][\u0080-\u00BF\u0400-\u045F\u0490\u0491\u2013-\u2122]/;
 
             function fixLine(s) {
@@ -214,7 +214,7 @@
                 try { return utf.decode(bytes); } catch (e) { return s; }
             }
 
-            // декодирует байты и чинит двойную кодировку построчно
+            
             function decode(u8) {
                 let isUtf = true;
                 for (let i = 0; i < Math.min(u8.length, 4096); i++) {
@@ -246,7 +246,7 @@
                 this.render();
             }
 
-            // прокрутить к строке (по центру экрана) и подсветить её
+            
             scrollToLine(idx) {
                 if(idx < 0 || idx >= this.lines.length) return;
                 this.highlight = idx;
@@ -271,14 +271,14 @@
             }
         }
 
-        // натуральная сортировка: "2024-01-2.log" идёт раньше "2024-01-10.log"
+        
         const NAT = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
         const escHtml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const tick = () => new Promise(r => setTimeout(r, 0));
 
         const HistoryApp = {
             files: {}, 
-            selected: new Set(),   // выбранные файлы (живут отдельно от DOM, не слетают при перерисовке)
+            selected: new Set(),   
             activeFile: null,
             viewer: null,
             allSelected: false,
@@ -301,7 +301,7 @@
                 };
                 dlInp.oninput = () => { document.getElementById('btn-dl').disabled = !dlInp.value.trim(); };
 
-                // клик по результату поиска → открыть файл сразу на нужной строке
+                
                 document.getElementById('search-results').addEventListener('click', e => {
                     const hit = e.target.closest('[data-l]');
                     if(!hit) return;
@@ -399,7 +399,7 @@
             addFile(name, lines) {
                 if(this.files[name]) name += `_${Math.floor(Math.random()*1000)}`;
                 this.files[name] = lines;
-                this.selected.add(name);   // новые файлы выбраны по умолчанию
+                this.selected.add(name);   
                 if(!this.activeFile) this.loadFile(name);
             },
 
@@ -420,7 +420,7 @@
                     const el = document.createElement('div');
                     el.className = `file-item ${k === this.activeFile ? 'active' : 'text-gray-400'}`;
                     
-                    // Checkbox
+                    
                     const cb = document.createElement('input');
                     cb.type = 'checkbox';
                     cb.className = 'accent-lime w-3 h-3 rounded bg-black border-white/20 file-cb';
@@ -448,7 +448,7 @@
                 this.updateSelectionUI();
             },
 
-            // обновляет иконку "выбрать все", кнопки удалить/обработать
+            
             updateSelectionUI() {
                 const total = Object.keys(this.files).length;
                 for(const k of this.selected) if(!this.files[k]) this.selected.delete(k);
@@ -462,7 +462,7 @@
                 document.getElementById('btn-process').innerText = n > 1 ? `ОБРАБОТАТЬ (${n})` : 'ОБРАБОТАТЬ';
             },
 
-            // line — номер строки (с 0), к которой надо прокрутить
+            
             loadFile(name, line = -1) {
                 if(!this.files[name]) return;
                 const changed = this.activeFile !== name;
@@ -525,7 +525,7 @@
                 document.getElementById('search-results').innerHTML = '';
             },
 
-            // обрабатывает ВСЕ выбранные файлы (по порядку), а если ничего не выбрано — открытый
+            
             async process() {
                 const keys = this.sortedKeys();
                 if(!keys.length) return alert('нет файлов');
@@ -553,12 +553,22 @@
                         const end = Math.min(i+batch, lines.length);
                         for(let j=i; j<end; j++) {
                             const l = lines[j];
+                            let msg = '';
+                            
                             const idx = l.indexOf('[CHAT]');
-                            if(idx === -1) continue;
-                            const msg = l.substring(idx+6).trim();
+                            if (idx !== -1) {
+                                msg = l.substring(idx + 6).trim();
+                            } else {
+                                const asyncIdx = l.indexOf('Async Chat Thread');
+                                if (asyncIdx !== -1) {
+                                    const infoIdx = l.indexOf('/INFO]: ', asyncIdx);
+                                    if (infoIdx !== -1) msg = l.substring(infoIdx + 8).trim();
+                                }
+                            }
+                            
                             if(!msg) continue;
                             const isP = msg.includes('Party');
-                            const isG = /^\[.+?\]/.test(msg);
+                            const isG = /^\[.+?\]/.test(msg) || /^#\d+/.test(msg);
                             if((isP && p) || (isG && g) || (!isP && !isG)) res.push(msg);
                         }
                         doneLines += end - i;
@@ -570,14 +580,14 @@
                         filesWithChat++;
                         totalMsgs += res.length;
                         if(multi) out.push(`═══════════ ${name} ═══════════`);
-                        for(let k = 0; k < res.length; k++) out.push(res[k]); // без spread — не падает на огромных массивах
+                        for(let k = 0; k < res.length; k++) out.push(res[k]); 
                     }
                 }
 
                 const outEl = document.getElementById('output-log');
                 outEl.value = out.join('\n');
                 outEl.scrollTop = 0;
-                outEl.placeholder = totalMsgs ? 'нажми обработать...' : 'в выбранных файлах нет сообщений чата ([CHAT])';
+                outEl.placeholder = totalMsgs ? 'нажми обработать...' : 'в выбранных файлах нет сообщений чата';
                 document.getElementById('result-stats').innerText =
                     `${totalMsgs} сообщ. · файлов: ${names.length}` + (multi ? ` (с чатом: ${filesWithChat})` : '');
                 this.uiLoading("", false);
@@ -609,7 +619,7 @@
                 const keys = this.sortedKeys();
                 if(!q || !keys.length) return;
 
-                // SECRET CODE
+                
                 if(q.trim() === 'slonyara50') {
                     SlonyaraTab.open(this.files);
                     return;
@@ -657,7 +667,7 @@
                 const on = ['bg-lime', 'text-black'];
                 const off = ['text-gray-400', 'hover:text-white', 'hover:bg-white/5'];
                 if(tab === 'filter') {
-                    if(!search.classList.contains('hidden')) this.searchScroll = resBox.scrollTop; // запомнить, где был в результатах
+                    if(!search.classList.contains('hidden')) this.searchScroll = resBox.scrollTop; 
                     filter.classList.remove('hidden'); search.classList.add('hidden'); search.classList.remove('flex');
                     btnF.classList.add(...on); btnF.classList.remove(...off);
                     btnS.classList.remove(...on); btnS.classList.add(...off);
