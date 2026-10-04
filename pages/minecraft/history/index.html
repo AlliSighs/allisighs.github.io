@@ -554,6 +554,7 @@
                         for(let j=i; j<end; j++) {
                             const l = lines[j];
                             let msg = '';
+                            let isForceKeep = false; // Флаг для принудительного сохранения системных сообщений
                             
                             const idx = l.indexOf('[CHAT]');
                             if (idx !== -1) {
@@ -561,15 +562,30 @@
                             } else {
                                 const asyncIdx = l.indexOf('Async Chat Thread');
                                 if (asyncIdx !== -1) {
-                                    const infoIdx = l.indexOf('/INFO]: ', asyncIdx);
-                                    if (infoIdx !== -1) msg = l.substring(infoIdx + 8).trim();
+                                    const infoIdx = l.indexOf('INFO]: ', asyncIdx);
+                                    if (infoIdx !== -1) msg = l.substring(infoIdx + 7).trim();
+                                } else {
+                                    const lowerLine = l.toLowerCase();
+                                    // Ищем ParkourBeat (любой регистр) или сообщение о входе
+                                    if (lowerLine.includes('parkourbeat') || lowerLine.includes('logged in with entity id')) {
+                                        isForceKeep = true;
+                                        const infoIdx = l.indexOf('INFO]: ');
+                                        // Отрезаем дату и поток, если находим INFO]:
+                                        msg = infoIdx !== -1 ? l.substring(infoIdx + 7).trim() : l.trim();
+                                    }
                                 }
                             }
                             
                             if(!msg) continue;
-                            const isP = msg.includes('Party');
-                            const isG = /^\[.+?\]/.test(msg) || /^#\d+/.test(msg);
-                            if((isP && p) || (isG && g) || (!isP && !isG)) res.push(msg);
+                            
+                            // Если это техническое сообщение - сразу пушим без фильтрации галочками
+                            if (isForceKeep) {
+                                res.push(msg);
+                            } else {
+                                const isP = msg.includes('Party');
+                                const isG = /^\[.+?\]/.test(msg) || /^#\d+/.test(msg);
+                                if((isP && p) || (isG && g) || (!isP && !isG)) res.push(msg);
+                            }
                         }
                         doneLines += end - i;
                         this.setProgress(doneLines, totalLines, `ФИЛЬТРАЦИЯ... ${fi + 1}/${names.length}`);
